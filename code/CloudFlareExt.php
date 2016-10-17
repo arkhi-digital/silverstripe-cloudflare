@@ -17,7 +17,6 @@ class CloudFlareExt extends SiteTreeExtension
         // we don't purge anything if we're operating on localhost
         if ($this->hasCFCredentials() && strlen($original->URLSegment)) {
             $this->purgeCacheFor($original->URLSegment);
-            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare cache has been purged for: /' . $original->URLSegment) . '/');
         }
 
         parent::onAfterPublish($original);
@@ -31,7 +30,6 @@ class CloudFlareExt extends SiteTreeExtension
     {
         if ($this->hasCFCredentials()) {
             $this->purgeCacheFor($this->owner->URLSegment);
-            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare cache has been purged for: /' . $this->owner->URLSegment) . '/');
         }
 
         parent::onBeforeUnpublish();
@@ -61,7 +59,7 @@ class CloudFlareExt extends SiteTreeExtension
     public function getCFCredentials()
     {
         if ($this->hasCFCredentials()) {
-            return $config = Config::inst()->get("CloudFlare", "auth");
+            return Config::inst()->get("CloudFlare", "auth");
         }
 
         return FALSE;
@@ -92,9 +90,10 @@ class CloudFlareExt extends SiteTreeExtension
         $purgeUrl = $baseUrl . $url;
         $auth     = $this->getCFCredentials();
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://api.cloudflare.com/client/v4/zones/{$zoneId}/purge_cache");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, "https://api.cloudflare.com/client/v4/zones/{$zoneId}/purge_cache");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         $headers = array(
             "X-Auth-Email: {$auth['email']}",
             "X-Auth-Key: {$auth['key']}",
@@ -109,14 +108,27 @@ class CloudFlareExt extends SiteTreeExtension
             )
         );
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 
-        $result = curl_exec($ch);
-        curl_close($ch);
+        $result = curl_exec($curl);
+        curl_close($curl);
 
-        // todo act on $result - it's wrong to assume success
+        if (!is_object($result = json_decode($result))) {
+            // a non-JSON string was returned?
+            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The response received from CloudFlare is malformed. See PHP error log for more information'));
+            error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, true));
+            return FALSE;
+        }
+
+        if ($result->success) {
+            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare cache has been purged for: /' . $url . '/'));
+            return TRUE;
+        }
+
+        Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The API responded with an error. See PHP error log for more information'));
+        error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, true));
         return TRUE;
     }
 
@@ -127,32 +139,40 @@ class CloudFlareExt extends SiteTreeExtension
      */
     public function fetchZoneID()
     {
+        if (!$auth = $this->getCFCredentials()) {
+            user_error("CloudFlare API credentials have not been provided.");
+        }
+
         $replaceWith = array(
             "www."     => "",
             "http://"  => "",
             "https://" => ""
         );
 
-        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $_SERVER[ 'SERVER_NAME' ]);
+        $server = Convert::raw2xml($_SERVER); // "Fixes" #1
+
+        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
 
         if ($serverName == 'localhost') {
             return FALSE;
         }
 
-        $auth = $this->getCFCredentials();
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://api.cloudflare.com/client/v4/zones?name={$serverName}&status=active&page=1&per_page=20&order=status&direction=desc&match=all");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, "https://api.cloudflare.com/client/v4/zones?name={$serverName}&status=active&page=1&per_page=20&order=status&direction=desc&match=all");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         $headers = array(
             "X-Auth-Email: {$auth['email']}",
             "X-Auth-Key: {$auth['key']}"
         );
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
-        $result = curl_exec($ch);
-        curl_close($ch);
+        // I didn't like the idea of having to fake a User Agent, but without it; Cloud Flare's WAF will block you.
+        // I'm not exactly sure why it expects an API request to come from a browser.
+        curl_setopt($curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36");
+
+        $result = curl_exec($curl);
+        curl_close($curl);
 
         $array = json_decode($result, TRUE);
 
