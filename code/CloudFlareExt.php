@@ -116,6 +116,7 @@ class CloudFlareExt extends SiteTreeExtension
         $result = curl_exec($ch);
         curl_close($ch);
 
+        // todo act on $result - it's wrong to assume success
         return TRUE;
     }
 
@@ -133,9 +134,6 @@ class CloudFlareExt extends SiteTreeExtension
         );
 
         $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $_SERVER[ 'SERVER_NAME' ]);
-
-        // testing
-        $serverName = "steadlane.com.au";
 
         if ($serverName == 'localhost') {
             return FALSE;
