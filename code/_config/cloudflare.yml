@@ -5,10 +5,6 @@ After:
   - 'cms/*'
 ---
 
-SiteTree:
-  extensions:
-    - CloudFlareExt
-
 CloudFlare:
   auth:
     email: # aka X-Auth-Email

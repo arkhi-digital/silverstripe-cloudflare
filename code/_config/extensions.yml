@@ -1,0 +1,10 @@
+---
+Name: cloudflareextensions
+After:
+  - 'framework/*'
+  - 'cms/*'
+---
+
+SiteTree:
+  extensions:
+    - CloudFlareExt
