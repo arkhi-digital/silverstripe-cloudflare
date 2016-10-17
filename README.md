@@ -44,6 +44,6 @@ If you feel you can improve this module in any way, shape or form please do not 
 
 To report a bug or an issue please use our [issue tracker](https://github.com/steadlane/silverstripe-cloudflare/issues).
 
-# License
+## License
 
 This module is licensed under the [BSD-3 Clause](https://github.com/steadlane/silverstripe-cloudflare/blob/master/LICENSE) license.
