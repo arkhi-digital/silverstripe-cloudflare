@@ -46,4 +46,4 @@ To report a bug or an issue please use our [issue tracker](https://github.com/st
 
 ## License
 
-This module is licensed under the [BSD-3 Clause](https://github.com/steadlane/silverstripe-cloudflare/blob/master/LICENSE) license.
+This module is distributed under the [BSD-3 Clause](https://github.com/steadlane/silverstripe-cloudflare/blob/master/LICENSE) license.
