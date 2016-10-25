@@ -173,6 +173,7 @@ class CloudFlare
 
         static::setAlert($alert);
         Controller::curr()->response->addHeader('X-Status', rawurlencode($alert));
+
         return TRUE;
     }
 
@@ -196,7 +197,7 @@ class CloudFlare
         );
 
         foreach ($files as $file) {
-            $data[ 'files' ][] = static::convert2absolute($file);
+            $data[ 'files' ][] = static::convertToAbsolute($file);
         }
 
         $result   = static::purgeRequest($data);
@@ -247,7 +248,7 @@ class CloudFlare
         );
 
         foreach ($files as $file) {
-            $data[ 'files' ][] = static::convert2absolute($file);
+            $data[ 'files' ][] = static::convertToAbsolute($file);
         }
 
         $result   = static::purgeRequest($data);
@@ -298,7 +299,7 @@ class CloudFlare
         );
 
         foreach ($files as $file) {
-            $data[ 'files' ][] = static::convert2absolute($file);
+            $data[ 'files' ][] = static::convertToAbsolute($file);
         }
 
         $result   = static::purgeRequest($data);
@@ -427,7 +428,7 @@ class CloudFlare
 
             for ($i = 0; $i < $chunks; $i++) {
                 $chunk       = array_slice($data[ 'files' ], $start, 500);
-                $result      = static::purgeRequest(array( 'files' => $chunk ), true);
+                $result      = static::purgeRequest(array( 'files' => $chunk ), TRUE);
                 $responses[] = json_decode($result, TRUE);
                 $start += 500;
             }
@@ -500,25 +501,25 @@ class CloudFlare
      *
      * @return mixed
      */
-    public static function convert2absolute($files)
+    public static function convertToAbsolute($files)
     {
 
         $baseUrl = rtrim(Director::absoluteBaseURL(), "/");
 
         if (is_array($files)) {
             foreach ($files as $index => $file) {
-                $basename         = basename($file);
-                $basename_encoded = urlencode($basename);
-                $file             = str_replace($basename, $basename_encoded, $file);
+                $basename        = basename($file);
+                $basenameEncoded = urlencode($basename);
+                $file            = str_replace($basename, $basenameEncoded, $file);
 
                 $files[ $index ] = str_replace($_SERVER[ 'DOCUMENT_ROOT' ], $baseUrl, $file);
             }
         }
 
         if (is_string($files)) {
-            $basename         = basename($files);
-            $basename_encoded = urlencode($basename);
-            $files            = str_replace($basename, $basename_encoded, $files);
+            $basename        = basename($files);
+            $basenameEncoded = urlencode($basename);
+            $files           = str_replace($basename, $basenameEncoded, $files);
 
             return str_replace($_SERVER[ 'DOCUMENT_ROOT' ], $baseUrl, $files);
         }
@@ -592,9 +593,8 @@ class CloudFlare
             if (isset($parts[ 'query' ])) {
                 parse_str($parts[ 'query' ], $params);
             }
-            else {
-                $params = array();
-            }
+
+            $params = (isset($parts[ 'query' ])) ? $params : array();
 
             $params[ 'stage' ] = $to;
             $parts[ 'query' ]  = http_build_query($params);
