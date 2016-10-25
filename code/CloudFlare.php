@@ -3,6 +3,15 @@
 class CloudFlare
 {
 
+    const CF_ZONE_ID_CACHE_KEY = 'CFZoneID';
+
+    /**
+     * This will toggle to TRUE when a ZoneID has been detected thus allowing the functionality in the admin panel to be available.
+     *
+     * @var bool
+     */
+    protected static $ready = false;
+
     /**
      * Ensures that CloudFlare authentication credentials are set in code/_config/cloudflare.yml
      *
@@ -276,6 +285,12 @@ class CloudFlare
             user_error("CloudFlare API credentials have not been provided.");
         }
 
+        $factory = \SS_Cache::factory("CloudFlare");
+
+        if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
+            return $cache;
+        }
+
         $replaceWith = array(
             "www."     => "",
             "http://"  => "",
@@ -287,6 +302,7 @@ class CloudFlare
         $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
 
         if ($serverName == 'localhost') {
+            static::setAlert("This module does not operate under <strong>localhost</strong>. Please ensure your website has a resolvable DNS and access the website via the domain.", "error");
             return FALSE;
         }
 
@@ -309,11 +325,19 @@ class CloudFlare
 
         $array = json_decode($result, TRUE);
 
-        if (!array_key_exists("result", $array)) {
+        if (!array_key_exists("result", $array) || empty($array['result'])) {
+            static::isReady(false);
+            static::setAlert("Unable to detect a Zone ID for <strong>{$serverName}</strong> under the user <strong>{$auth['email']}</strong>.<br/><br/>Please create a new zone under this account to use this module on this domain.", "error");
             return FALSE;
         }
 
-        return $array[ 'result' ][ 0 ][ 'id' ];
+        $zoneID = $array[ 'result' ][ 0 ][ 'id' ];
+
+        $factory->save($zoneID, self::CF_ZONE_ID_CACHE_KEY);
+
+        static::isReady(true);
+
+        return $zoneID;
 
     }
 
@@ -434,6 +458,23 @@ class CloudFlare
         }
 
         return FALSE;
+    }
+
+    /**
+     * Set or get the ready state
+     *
+     * @param null $state
+     *
+     * @return bool|null
+     */
+    public function isReady($state = null) {
+        if ($state) {
+            self::$ready = (bool)$state;
+
+            return $state;
+        }
+
+        return self::$ready;
     }
 
     /**
