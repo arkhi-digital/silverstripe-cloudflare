@@ -54,6 +54,11 @@ form#CloudFlareSingleUrlForm_purge-single .field {
     padding: 0;
 }
 
+.cf-no-zone-id {
+    color: red;
+    font-weight: bold;
+}
+
 .text-center {
     text-align: center;
 }

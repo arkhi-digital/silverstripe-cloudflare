@@ -1,5 +1,5 @@
-<div id="pages-controller-cms-content" class="cms-content center " data-layout-type="border"
-     data-pjax-fragment="Content">
+<% if $ZoneID %><% end_if %>
+<div class="cms-content center $BaseCSSClasses" data-layout-type="border" data-pjax-fragment="Content">
     <div class="cms-content-header north">
         <div class="cms-content-header-info">
             <% include CMSBreadcrumbs %>
@@ -8,6 +8,7 @@
 
     <div class="cms-content-fields cms-panel-padded center">
         <% if $CFAlert.HasAlert %><div class="cloudflare-message message {$CFAlert.Type}">$CFAlert.Message</div><% end_if %>
+        <% if $isReady %>
         <div class="cloudflare-panel">
             <div class="cloudflare-panel-title">Quick Actions</div>
             <div class="cloudflare-panel-actions">
@@ -20,8 +21,9 @@
 
         <div class="cloudflare-panel">
             <div class="cloudflare-panel-title">Single File / URL</div>
-            $SingleUrlForm
+            $FormSingleUrlForm
         </div>
+        <% end_if %>
     </div>
 
     <div class="cms-content-actions cms-content-controls south text-center">
