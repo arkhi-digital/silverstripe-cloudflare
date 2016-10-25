@@ -86,6 +86,20 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
         return ArrayData::create($array);
     }
 
+    /**
+     * Template function to determine if CloudFlare is ready (ergo has a zone ID)
+     *
+     * @return bool|null
+     */
+    public function isReady() {
+        return CloudFlare::isReady();
+    }
+
+    /**
+     * Template function to display the detected zone ID
+     *
+     * @return string
+     */
     public function ZoneID() {
         return CloudFlare::fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
     }
