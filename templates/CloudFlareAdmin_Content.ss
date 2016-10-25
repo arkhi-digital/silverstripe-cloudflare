@@ -12,17 +12,17 @@
         <div class="cloudflare-panel">
             <div class="cloudflare-panel-title">Quick Actions</div>
             <div class="cloudflare-panel-actions">
-                <a href="{$Link(purge-all)}" class="ss-ui-button">Purge All</a>
-                <a href="{$Link(purge-css)}" class="ss-ui-button">Purge CSS</a>
-                <a href="{$Link(purge-javascript)}" class="ss-ui-button">Purge Javascript</a>
-                <a href="{$Link(purge-images)}" class="ss-ui-button">Purge Images</a>
+                <a href="{$Link('purge-all')}" class="ss-ui-button">Purge All</a>
+                <a href="{$Link('purge-css')}" class="ss-ui-button">Purge CSS</a>
+                <a href="{$Link('purge-javascript')}" class="ss-ui-button">Purge Javascript</a>
+                <a href="{$Link('purge-images')}" class="ss-ui-button">Purge Images</a>
             </div>
         </div>
 
-        <div class="cloudflare-panel">
+        <%--<div class="cloudflare-panel">
             <div class="cloudflare-panel-title">Single File / URL</div>
             $FormSingleUrlForm
-        </div>
+        </div>--%>
         <% end_if %>
     </div>
 
