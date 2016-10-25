@@ -6,11 +6,12 @@ class CloudFlare
     const CF_ZONE_ID_CACHE_KEY = 'CFZoneID';
 
     /**
-     * This will toggle to TRUE when a ZoneID has been detected thus allowing the functionality in the admin panel to be available.
+     * This will toggle to TRUE when a ZoneID has been detected thus allowing the functionality in the admin panel to
+     * be available.
      *
      * @var bool
      */
-    protected static $ready = false;
+    protected static $ready = FALSE;
 
     /**
      * Ensures that CloudFlare authentication credentials are set in code/_config/cloudflare.yml
@@ -66,11 +67,9 @@ class CloudFlare
 
         $purgeUrl = $baseUrl . $fileOrUrl;
 
-        $data = json_encode(
-            array(
-                "files" => array(
-                    $purgeUrl
-                )
+        $data = array(
+            "files" => array(
+                $purgeUrl
             )
         );
 
@@ -85,7 +84,61 @@ class CloudFlare
         }
 
         if ($result->success) {
-            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare cache has been purged for: /' . $fileOrUrl . '/'));
+            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare cache has been purged for: ' . $fileOrUrl));
+
+            return TRUE;
+        }
+
+        Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The API responded with an error. See PHP error log for more information'));
+        error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, TRUE));
+
+        return TRUE;
+    }
+
+    /**
+     * Same as purgeSingle with the obvious functionality to handle many
+     *
+     * @param array $filesOrUrls
+     *
+     * @return bool
+     */
+    public static function purgeMany(array $filesOrUrls)
+    {
+        // fetch zone ID dynamically
+        $zoneId = static::fetchZoneID();
+
+        $count = count($filesOrUrls);
+
+        if (!$zoneId) {
+            error_log("CloudFlareExt: Attempted to purge cache for {$count} files but unable to find Zone ID");
+
+            return FALSE;
+        }
+
+        $baseUrl = Director::absoluteBaseURL();
+
+        $purgeUrls = array();
+
+        foreach ($filesOrUrls as $fileOrUrl) {
+            $purgeUrls[] = $baseUrl . $fileOrUrl;
+        }
+
+        $data = array(
+            "files" => $purgeUrls
+        );
+
+        $result = static::purgeRequest($data);
+
+        if (!is_object($result = json_decode($result))) {
+            // a non-JSON string was returned?
+            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The response received from CloudFlare is malformed. See PHP error log for more information'));
+            error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, TRUE));
+
+            return FALSE;
+        }
+
+        if ($result->success) {
+            Controller::curr()->response->addHeader('X-Status', rawurlencode("CloudFlare cache has been purged for: {$count} files as a result of updating this page"));
 
             return TRUE;
         }
@@ -101,7 +154,7 @@ class CloudFlare
      *
      * @return mixed
      */
-    public static function purgeAll()
+    public static function purgeAll($customAlert = NULL)
     {
         $data = array(
             "purge_everything" => TRUE
@@ -116,8 +169,10 @@ class CloudFlare
             return FALSE;
         }
 
-        static::setAlert("Successfully purged <strong>EVERYTHING</strong> from cache.");
+        $alert = $customAlert ?: "Successfully purged <strong>EVERYTHING</strong> from cache.";
 
+        static::setAlert($alert);
+        Controller::curr()->response->addHeader('X-Status', rawurlencode($alert));
         return TRUE;
     }
 
@@ -288,6 +343,8 @@ class CloudFlare
         $factory = \SS_Cache::factory("CloudFlare");
 
         if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
+            static::isReady(TRUE);
+
             return $cache;
         }
 
@@ -299,10 +356,12 @@ class CloudFlare
 
         $server = Convert::raw2xml($_SERVER); // "Fixes" #1
 
-        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
+        //$serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
+        $serverName = "steadlane.com.au";
 
         if ($serverName == 'localhost') {
             static::setAlert("This module does not operate under <strong>localhost</strong>. Please ensure your website has a resolvable DNS and access the website via the domain.", "error");
+
             return FALSE;
         }
 
@@ -325,9 +384,10 @@ class CloudFlare
 
         $array = json_decode($result, TRUE);
 
-        if (!array_key_exists("result", $array) || empty($array['result'])) {
-            static::isReady(false);
+        if (!array_key_exists("result", $array) || empty($array[ 'result' ])) {
+            static::isReady(FALSE);
             static::setAlert("Unable to detect a Zone ID for <strong>{$serverName}</strong> under the user <strong>{$auth['email']}</strong>.<br/><br/>Please create a new zone under this account to use this module on this domain.", "error");
+
             return FALSE;
         }
 
@@ -335,7 +395,7 @@ class CloudFlare
 
         $factory->save($zoneID, self::CF_ZONE_ID_CACHE_KEY);
 
-        static::isReady(true);
+        static::isReady(TRUE);
 
         return $zoneID;
 
@@ -347,21 +407,28 @@ class CloudFlare
      * @param array|NULL $data
      * @param string     $method
      *
+     * @param null       $isRecursing
+     *
      * @return mixed
      */
-    public static function purgeRequest(array $data = NULL, $method = 'DELETE')
+    public static function purgeRequest(array $data = NULL, $isRecursing = NULL, $method = 'DELETE')
     {
+        if (array_key_exists('files', $data) && !$isRecursing) {
+            // get URL variants
+            $data[ 'files' ] = static::getUrlVariants($data[ 'files' ]);
+        }
+
         if (array_key_exists('files', $data) && count($data[ 'files' ]) > 500) {
             // slice the array into chunks of 500 then recursively call this function.
             // cloudflare limits cache purging to 500 files per request.
-            $chunks = ceil(count($data[ 'files' ]) / 500);
-            $start  = 0;
 
+            $chunks    = ceil(count($data[ 'files' ]) / 500);
+            $start     = 0;
             $responses = array();
 
             for ($i = 0; $i < $chunks; $i++) {
                 $chunk       = array_slice($data[ 'files' ], $start, 500);
-                $result      = static::purgeRequest(array( 'files' => $chunk ));
+                $result      = static::purgeRequest(array( 'files' => $chunk ), true);
                 $responses[] = json_decode($result, TRUE);
                 $start += 500;
             }
@@ -467,12 +534,15 @@ class CloudFlare
      *
      * @return bool|null
      */
-    public function isReady($state = null) {
+    public static function isReady($state = NULL)
+    {
         if ($state) {
             self::$ready = (bool)$state;
 
             return $state;
         }
+
+        self::fetchZoneID();
 
         return self::$ready;
     }
@@ -500,6 +570,70 @@ class CloudFlare
         }
 
         return $files;
+    }
+
+    /**
+     * Converts links to there "Stage" or "Live" counterpart
+     *
+     * @param string $to Stage or Live
+     * @param array  $urls
+     *
+     * @return array
+     */
+    protected function convertUrl($to = 'Stage', array $urls = array())
+    {
+        if (!in_array(strtolower($to), array( 'stage', 'live' ))) {
+            throw new \RuntimeException("convertUrl $to param expects either \"Stage\" or \"Live\"");
+        }
+
+        $to = ucfirst(strtolower($to));
+
+        foreach ($urls as &$url) {
+            $parts = parse_url($url);
+            if (isset($parts[ 'query' ])) {
+                parse_str($parts[ 'query' ], $params);
+            }
+            else {
+                $params = array();
+            }
+
+            $params[ 'stage' ] = $to;
+            $parts[ 'query' ]  = http_build_query($params);
+            $url               = $parts[ 'scheme' ] . "://" . $parts[ 'host' ] . $parts[ 'path' ] . '?' . $parts[ 'query' ];
+        }
+
+        return $urls;
+    }
+
+    /**
+     * Generates URL variants (Stage urls, HTTPS, Non-HTTPS)
+     *
+     * @param $urls
+     *
+     * @return array
+     */
+    public static function getUrlVariants($urls)
+    {
+        $output = array();
+
+        foreach ($urls as $url) {
+            $output[] = $url;
+
+            // HTTPS Equiv
+            if (strstr($url, "http://") && !in_array(str_replace("http://", "https://", $url), $output)) {
+                $output[] = str_replace("http://", "https://", $url);
+            }
+
+            // HTTP Equiv
+            if (strstr($url, "https://") && !in_array(str_replace("https://", "http://", $url), $output)) {
+                $output[] = str_replace("http://", "https://", $url);
+            }
+        }
+
+        $stage = static::convertUrl('Stage', $output);
+        $urls  = array_merge($output, $stage);
+
+        return $urls;
     }
 
     /**
