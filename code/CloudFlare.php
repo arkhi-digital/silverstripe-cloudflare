@@ -356,8 +356,7 @@ class CloudFlare
 
         $server = Convert::raw2xml($_SERVER); // "Fixes" #1
 
-        //$serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
-        $serverName = "steadlane.com.au";
+        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
 
         if ($serverName == 'localhost') {
             static::setAlert("This module does not operate under <strong>localhost</strong>. Please ensure your website has a resolvable DNS and access the website via the domain.", "error");
