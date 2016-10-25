@@ -11,6 +11,21 @@ engines:
     enabled: true
   phpmd:
     enabled: true
+    checks:
+      CleanCode/StaticAccess:
+        enabled: false
+      Design/DevelopmentCodeFragment:
+        enabled: false
+      Controversial/Superglobals:
+        enabled: false
+      Design/TooManyPublicMethods:
+        enabled: false
+      CleanCode/StaticAccess:
+        enabled: false
+      Similar code:
+        enabled: false
+      Naming/ShortVariable:
+        enabled: false
 ratings:
   paths:
   - "**.php"
