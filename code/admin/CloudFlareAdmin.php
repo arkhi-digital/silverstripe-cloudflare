@@ -26,21 +26,12 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 
     public function init()
     {
-        Requirements::css('cloudflare/css/cloudflare.css');
-
         parent::init();
+
+        Requirements::css('cloudflare/css/cloudflare.css');
     }
 
-    public function index()
-    {
-        return $this->render(
-            array(
-                'SingleUrlForm' => $this->formSingleUrlForm()
-            )
-        );
-    }
-
-    public function formSingleUrlForm()
+    public function FormSingleUrlForm()
     {
         return CloudFlareSingleUrlForm::create($this, 'purge-single');
     }
@@ -96,7 +87,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     public function ZoneID() {
-        return CloudFlare::fetchZoneID() ?: "UNABLE TO DETECT";
+        return CloudFlare::fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
     }
 
 
