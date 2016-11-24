@@ -4,10 +4,26 @@
 
 # Introduction
 
-The intention of this module is to relieve the double-handling required when updating any of your pages within the CMS of SilverStripe. When a page is _Published_ or _Unpublished_ a call will be made to the relevant CloudFlare endpoint to clear the cache of the URL/Page you just published/unpublished.
+The intention of this module is to relieve the double-handling required when updating any of your pages within the CMS of SilverStripe while being behind CloudFlare. When a page is _Published_ or _Unpublished_ a call will be made to the relevant CloudFlare endpoint to clear the cache of the URL/Page you just published/unpublished.
 
 This allows you to see your changes instantly in the preview window without having to worry about logging into the Cloud Flare dashboard to purge the cache yourself.
 
+CloudFlare allows you to have multiple domains registered under a single account. This module is versatile in the sense that it will automatically detect which Zone ID is to be used alongside the domain that this module is installed on. Therefore beyond the two configuration settings required below there is no additional setup required. You can "plug and play" this module in as many locations as you want which means you don't have to worry about tracking down the relevant Zone ID (you can only get it via the API).
+
+**Remember**: Always keep your API authentication details secure. If you are concerned with your credentials being on someone else's machine; have them set up their own CloudFlare account.
+
+**Note**: The detected Zone ID will always be shown in the SilverStripe Administration panel whilst viewing the "CloudFlare" menu item
+
+## Features
+
+- Dynamic Zone ID Detection  
+- Intelligent Purging
+    - If you modify the title or URL of any page: All cache for the zone will be purged.
+    - If you modify the contents of any page: Only the cache for that page will be purged.
+    - If you modify any page that has a parent, the page you modified and all of it's parents will be purged too.
+- Manual Purging
+    - The administration area for this module allows you to either purge all css files, all javascript files, all image files or ... everything. 
+    
 ## Installation
 
 This module only supports installation via composer:
@@ -16,29 +32,29 @@ This module only supports installation via composer:
 composer require steadlane/silverstripe-cloudflare
 ```
 
-Run `/dev/build` afterwards for SilverStripe to become aware of this extension
+Run `/dev/build` afterwards and `?flush=1` for good measure for SilverStripe to become aware of this module
 
 ## Configuration
 
-Obtain your API key from CloudFlare and enter it into `code/_config/cloudflare.yml` like below:
+Configuration for this module is minimal, you need only define two constants in `mysite/_config.php`
 
 ```
----
-Name: cloudflare
-After:
-  - 'framework/*'
-  - 'cms/*'
----
-
-CloudFlare:
-  auth:
-    email: you@example.com # aka X-Auth-Email
-    key: ABCDEFGHIJKLMNOPQRXTUVWXYZ123456789 # aka X-Auth-Key
+define('CLOUDFLARE_AUTH_EMAIL', 'mycloudflare@example.com.au');
+define('CLOUDFLARE_AUTH_KEY', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 ```
 
 ## Contributing
 
 If you feel you can improve this module in any way, shape or form please do not hesitate to submit a PR for review.
+
+## Troubleshooting and FAQ
+
+Q. **The SS CloudFlare administrator section is blank!**  
+A. If the CloudFlare administration panel isn't loading correctly, a quick `?flush=1` will resolve this issue.
+
+Q. **The SS CloudFlare footer always says "Zone ID: UNABLE TO DETECT".**  
+A. This module dynamically retrieves your Zone ID by using the domain you have accessed the website with. Ensure this domain is correctly registered under your CloudFlare account. If the issue persists, please open a ticket in our issue tracker and provide as much information you can.
+
 
 ## Bugs / Issues
 
