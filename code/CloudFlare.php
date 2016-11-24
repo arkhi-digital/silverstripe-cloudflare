@@ -14,16 +14,14 @@ class CloudFlare
     protected static $ready = FALSE;
 
     /**
-     * Ensures that CloudFlare authentication credentials are set in code/_config/cloudflare.yml
+     * Ensures that CloudFlare authentication credentials are defined as constants
      *
      * @return bool
      */
     public static function hasCFCredentials()
     {
-        $config = Config::inst()->get("CloudFlare", "auth");
-
-        if (!isset($config[ 'email' ]) || !isset($config[ 'key' ])) {
-            return FALSE;
+        if (!defined('CLOUDFLARE_AUTH_EMAIL') || !defined('CLOUDFLARE_AUTH_KEY')) {
+            return false;
         }
 
         return TRUE;
@@ -37,7 +35,10 @@ class CloudFlare
     public static function getCFCredentials()
     {
         if (static::hasCFCredentials()) {
-            return Config::inst()->get("CloudFlare", "auth");
+            return array(
+                'email' => CLOUDFLARE_AUTH_EMAIL,
+                'key' => CLOUDFLARE_AUTH_KEY
+            );
         }
 
         return FALSE;
@@ -456,7 +457,6 @@ class CloudFlare
             if (is_array($data)) {
                 $data = json_encode($data);
             }
-
             curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
         }
 
@@ -670,4 +670,5 @@ class CloudFlare
 
         static::sessionJar($jar);
     }
+
 }

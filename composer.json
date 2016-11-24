@@ -1,8 +1,8 @@
 {
   "name": "steadlane/silverstripe-cloudflare",
-  "description": "This module aims to relieve the stress of using CloudFlare caching with any SilverStripe project. Adds extension hooks that clears CloudFlares cache for a specific page when that page is published or saved as a draft.",
+  "description": "This module aims to relieve the stress of using CloudFlare caching with any SilverStripe project. Adds extension hooks that clears CloudFlares cache for a specific page when that page is published or unpublished.",
   "type": "silverstripe-module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "BSD (3-Clause)",
   "authors": [
     {
@@ -12,15 +12,12 @@
   ],
   "require": {
     "php": ">=5.3.3,<7",
-    "silverstripe/cms": "^3.4.0",
-    "silverstripe/framework": "^3.4.0"
+    "silverstripe/cms": ">=3.4.0 <4.0.0",
+    "silverstripe/framework": ">=3.4.0 <4.0.0"
   },
   "prefer-stable": true,
   "minimum-stability": "dev",
   "extra": {
-        "branch-alias": {
-            "dev-master": "0.x-dev"
-        },
         "installer-name": "cloudflare"
     },
   "repositories": [
