@@ -11,20 +11,34 @@ class CloudFlare
      *
      * @var bool
      */
-    protected static $ready = FALSE;
+    protected static $ready = false;
+
+    /**
+     * @var \CloudFlare
+     */
+    protected static $singleton;
+
+    /**
+     * Instance
+     * @return \CloudFlare
+     */
+    public static function inst()
+    {
+        return (is_object(static::$singleton)) ? static::$singleton : static::$singleton = new CloudFlare();
+    }
 
     /**
      * Ensures that CloudFlare authentication credentials are defined as constants
      *
      * @return bool
      */
-    public static function hasCFCredentials()
+    public function hasCFCredentials()
     {
-        if (!defined('CLOUDFLARE_AUTH_EMAIL') || !defined('CLOUDFLARE_AUTH_KEY')) {
+        if (!getenv('TRAVIS') && (!defined('CLOUDFLARE_AUTH_EMAIL') || !defined('CLOUDFLARE_AUTH_KEY'))) {
             return false;
         }
 
-        return TRUE;
+        return true;
     }
 
     /**
@@ -32,16 +46,16 @@ class CloudFlare
      *
      * @return array|bool
      */
-    public static function getCFCredentials()
+    public function getCFCredentials()
     {
-        if (static::hasCFCredentials()) {
+        if ($this->hasCFCredentials()) {
             return array(
                 'email' => CLOUDFLARE_AUTH_EMAIL,
-                'key' => CLOUDFLARE_AUTH_KEY
+                'key'   => CLOUDFLARE_AUTH_KEY
             );
         }
 
-        return FALSE;
+        return false;
     }
 
     /**
@@ -53,19 +67,20 @@ class CloudFlare
      *
      * @return bool
      */
-    public static function purgeSingle($fileOrUrl)
+    public function purgeSingle($fileOrUrl)
     {
         // fetch zone ID dynamically
-        $zoneId = static::fetchZoneID();
+        $zoneId = $this->fetchZoneID();
 
         if (!$zoneId) {
-            error_log("CloudFlareExt: Attempted to purge cache for {$fileOrUrl} but unable to find Zone ID");
+            if ($this->config()->log_errors) {
+                error_log("CloudFlareExt: Attempted to purge cache for {$fileOrUrl} but unable to find Zone ID");
+            }
 
-            return FALSE;
+            return false;
         }
 
-        $baseUrl = Director::absoluteBaseURL();
-
+        $baseUrl  = Director::absoluteBaseURL();
         $purgeUrl = $baseUrl . $fileOrUrl;
 
         $data = array(
@@ -74,26 +89,9 @@ class CloudFlare
             )
         );
 
-        $result = static::purgeRequest($data);
+        $result = $this->purgeRequest($data);
 
-        if (!is_object($result = json_decode($result))) {
-            // a non-JSON string was returned?
-            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The response received from CloudFlare is malformed. See PHP error log for more information'));
-            error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, TRUE));
-
-            return FALSE;
-        }
-
-        if ($result->success) {
-            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare cache has been purged for: ' . $fileOrUrl));
-
-            return TRUE;
-        }
-
-        Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The API responded with an error. See PHP error log for more information'));
-        error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, TRUE));
-
-        return TRUE;
+        return $this->responseHandler($result, 'CloudFlare cache has been purged for: ' . $fileOrUrl);
     }
 
     /**
@@ -103,17 +101,19 @@ class CloudFlare
      *
      * @return bool
      */
-    public static function purgeMany(array $filesOrUrls)
+    public function purgeMany(array $filesOrUrls)
     {
         // fetch zone ID dynamically
-        $zoneId = static::fetchZoneID();
+        $zoneId = $this->fetchZoneID();
 
         $count = count($filesOrUrls);
 
         if (!$zoneId) {
-            error_log("CloudFlareExt: Attempted to purge cache for {$count} files but unable to find Zone ID");
+            if ($this->config()->log_errors) {
+                error_log("CloudFlareExt: Attempted to purge cache for {$count} files but unable to find Zone ID");
+            }
 
-            return FALSE;
+            return false;
         }
 
         $baseUrl = Director::absoluteBaseURL();
@@ -128,54 +128,37 @@ class CloudFlare
             "files" => $purgeUrls
         );
 
-        $result = static::purgeRequest($data);
+        $response = $this->purgeRequest($data);
 
-        if (!is_object($result = json_decode($result))) {
-            // a non-JSON string was returned?
-            Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The response received from CloudFlare is malformed. See PHP error log for more information'));
-            error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, TRUE));
+        return $this->responseHandler(
+            $response,
+            "CloudFlare cache has been purged for: {$count} files as a result of updating this page"
+        );
 
-            return FALSE;
-        }
-
-        if ($result->success) {
-            Controller::curr()->response->addHeader('X-Status', rawurlencode("CloudFlare cache has been purged for: {$count} files as a result of updating this page"));
-
-            return TRUE;
-        }
-
-        Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: The API responded with an error. See PHP error log for more information'));
-        error_log("CloudFlare: The response received from CloudFlare is malformed. Response was: " . print_r($result, TRUE));
-
-        return TRUE;
     }
 
     /**
      * Purges everything that CloudFlare has cached
      *
+     * @param null $customAlert
+     *
      * @return mixed
      */
-    public static function purgeAll($customAlert = NULL)
+    public function purgeAll($customAlert = null)
     {
         $data = array(
-            "purge_everything" => TRUE
+            "purge_everything" => true
         );
 
-        $response = json_decode(static::purgeRequest($data), TRUE);
+        $response = $this->purgeRequest($data);
 
-        if (!is_array($response) || !array_key_exists('success', $response) || !$response[ 'success' ]) {
-            static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-            error_log("CloudFlare ran into an error:\n\n " . print_r($response, TRUE));
-
-            return FALSE;
-        }
-
-        $alert = $customAlert ?: "Successfully purged <strong>EVERYTHING</strong> from cache.";
-
-        static::setAlert($alert);
-        Controller::curr()->response->addHeader('X-Status', rawurlencode($alert));
-
-        return TRUE;
+        return $this->responseHandler(
+            $response,
+            $customAlert ?: _t(
+                "CloudFlare.PurgedEverything",
+                "Successfully purged <strong>EVERYTHING</strong> from cache."
+            )
+        );
     }
 
     /**
@@ -183,14 +166,20 @@ class CloudFlare
      *
      * @return bool
      */
-    public static function purgeCss()
+    public function purgeCss()
     {
-        $files = static::findFilesWithExts(array( ".css", ".css.map" )); // map here for the SASS/LESS enthusiasts
+        $files = $this->findFilesWithExts(array(".css", ".css.map")); // map here for the SASS/LESS enthusiasts
 
         if (empty($files)) {
-            static::setAlert("No CSS files were found.", "error");
+            $this->setAlert(
+                _t(
+                    "CloudFlare.NoCssFilesFound",
+                    "No CSS files were found."
+                ),
+                "error"
+            );
 
-            return FALSE;
+            return false;
         }
 
         $data = array(
@@ -198,35 +187,24 @@ class CloudFlare
         );
 
         foreach ($files as $file) {
-            $data[ 'files' ][] = static::convertToAbsolute($file);
+            $data[ 'files' ][] = $this->convertToAbsolute($file);
         }
 
-        $result   = static::purgeRequest($data);
-        $response = (is_array($result)) ? $result : json_decode($result, TRUE);
+        $result   = $this->purgeRequest($data);
+        $response = (is_array($result)) ? $result : json_decode($result, true);
 
-        // Really need to DRY this up.
-        if (array_key_exists('0', $response)) {
-            // request was split and has multiple responses. Ensure that ALL responses were successful.
-            // break on the first failure
-            foreach ($response as $resp) {
-                if (!is_array($resp) || !array_key_exists('success', $resp) || !$resp[ 'success' ]) {
-                    static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-                    error_log("CloudFlare ran into an error:\n\n " . print_r($resp, TRUE));
+        return $this->responseHandler(
+            $response,
+            _t(
+                "CloudFlare.SuccessPurgedCSS",
+                "Successfully purged {file_count} CSS files from cache.",
+                "",
+                array(
+                    'file_count' => count($data[ 'files' ])
+                )
+            )
+        );
 
-                    return FALSE;
-                }
-            }
-        }
-        elseif (!is_array($response) || !array_key_exists('success', $response) || !$response[ 'success' ]) {
-            static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-            error_log("CloudFlare ran into an error:\n\n " . print_r($response, TRUE));
-
-            return FALSE;
-        }
-
-        static::setAlert("Successfully purged " . count($data[ 'files' ]) . " CSS files from cache.");
-
-        return TRUE;
     }
 
     /**
@@ -234,14 +212,20 @@ class CloudFlare
      *
      * @return bool
      */
-    public static function purgeJs()
+    public function purgeJavascript()
     {
-        $files = static::findFilesWithExts(".js");
+        $files = $this->findFilesWithExts(".js");
 
         if (empty($files)) {
-            static::setAlert("No JS files were found.", "error");
+            $this->setAlert(
+                _t(
+                    "CloudFlare.NoJsFilesFound",
+                    "No Javascript files were found."
+                ),
+                "error"
+            );
 
-            return FALSE;
+            return false;
         }
 
         $data = array(
@@ -249,35 +233,24 @@ class CloudFlare
         );
 
         foreach ($files as $file) {
-            $data[ 'files' ][] = static::convertToAbsolute($file);
+            $data[ 'files' ][] = $this->convertToAbsolute($file);
         }
 
-        $result   = static::purgeRequest($data);
-        $response = (is_array($result)) ? $result : json_decode($result, TRUE);
+        $result   = $this->purgeRequest($data);
+        $response = (is_array($result)) ? $result : json_decode($result, true);
 
-        // Really need to DRY this up.
-        if (array_key_exists('0', $response)) {
-            // request was split and has multiple responses. Ensure that ALL responses were successful.
-            // break on the first failure
-            foreach ($response as $resp) {
-                if (!is_array($resp) || !array_key_exists('success', $resp) || !$resp[ 'success' ]) {
-                    static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-                    error_log("CloudFlare ran into an error:\n\n " . print_r($resp, TRUE));
+        return $this->responseHandler(
+            $response,
+            _t(
+                "CloudFlare.SuccessPurgeJavascript",
+                "Successfully purged {file_count} JS files from cache.",
+                "",
+                array(
+                    'file_count' => count($data[ 'files' ])
+                )
+            )
+        );
 
-                    return FALSE;
-                }
-            }
-        }
-        elseif (!is_array($response) || !array_key_exists('success', $response) || !$response[ 'success' ]) {
-            static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-            error_log("CloudFlare ran into an error:\n\n " . print_r($response, TRUE));
-
-            return FALSE;
-        }
-
-        static::setAlert("Successfully purged " . count($data[ 'files' ]) . " JS files from cache.");
-
-        return TRUE;
     }
 
     /**
@@ -285,14 +258,20 @@ class CloudFlare
      *
      * @return bool
      */
-    public static function purgeImages()
+    public function purgeImages()
     {
-        $files = static::findFilesWithExts(array( ".jpg", ".jpeg", ".gif", ".png", ".ico", ".bmp", ".svg" ));
+        $files = $this->findFilesWithExts(array(".jpg", ".jpeg", ".gif", ".png", ".ico", ".bmp", ".svg"));
 
         if (empty($files)) {
-            static::setAlert("No image files were found.", "error");
+            $this->setAlert(
+                _t(
+                    "CloudFlare.NoImageFilesFound",
+                    "No image files were found."
+                ),
+                "error"
+            );
 
-            return FALSE;
+            return false;
         }
 
         $data = array(
@@ -300,35 +279,24 @@ class CloudFlare
         );
 
         foreach ($files as $file) {
-            $data[ 'files' ][] = static::convertToAbsolute($file);
+            $data[ 'files' ][] = $this->convertToAbsolute($file);
         }
 
-        $result   = static::purgeRequest($data);
-        $response = (is_array($result)) ? $result : json_decode($result, TRUE);
+        $result   = $this->purgeRequest($data);
+        $response = (is_array($result)) ? $result : json_decode($result, true);
 
-        // Really need to DRY this up.
-        if (array_key_exists('0', $response)) {
-            // request was split and has multiple responses. Ensure that ALL responses were successful.
-            // break on the first failure
-            foreach ($response as $resp) {
-                if (!is_array($resp) || !array_key_exists('success', $resp) || !$resp[ 'success' ]) {
-                    static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-                    error_log("CloudFlare ran into an error:\n\n " . print_r($resp, TRUE));
+        return $this->responseHandler(
+            $response,
+            _t(
+                "CloudFlare.SuccessPurgedImages",
+                "Successfully purged {file_count} image files from cache.",
+                "",
+                array(
+                    'file_count' => count($data[ 'files' ])
+                )
+            )
+        );
 
-                    return FALSE;
-                }
-            }
-        }
-        elseif (!is_array($response) || !array_key_exists('success', $response) || !$response[ 'success' ]) {
-            static::setAlert("We didn't get a valid response from CloudFlare. Assume that files still require purging", "error");
-            error_log("CloudFlare ran into an error:\n\n " . print_r($response, TRUE));
-
-            return FALSE;
-        }
-
-        static::setAlert("Successfully purged " . count($data[ 'files' ]) . " image files from cache.");
-
-        return TRUE;
     }
 
     /**
@@ -336,16 +304,12 @@ class CloudFlare
      *
      * @return string|bool
      */
-    public static function fetchZoneID()
+    public function fetchZoneID()
     {
-        if (!$auth = static::getCFCredentials()) {
-            user_error("CloudFlare API credentials have not been provided.");
-        }
-
         $factory = \SS_Cache::factory("CloudFlare");
 
         if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
-            static::isReady(TRUE);
+            $this->isReady(true);
 
             return $cache;
         }
@@ -360,120 +324,97 @@ class CloudFlare
 
         $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
 
-        if ($serverName == 'localhost') {
-            static::setAlert("This module does not operate under <strong>localhost</strong>. Please ensure your website has a resolvable DNS and access the website via the domain.", "error");
-
-            return FALSE;
+        if (getenv('TRAVIS')) {
+            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
         }
 
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, "https://api.cloudflare.com/client/v4/zones?name={$serverName}&status=active&page=1&per_page=20&order=status&direction=desc&match=all");
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        $headers = array(
-            "X-Auth-Email: {$auth['email']}",
-            "X-Auth-Key: {$auth['key']}",
-            "Content-Type: application/json"
-        );
+        if ($serverName == 'localhost') {
+            $this->setAlert(
+                _t(
+                    "CloudFlare.NoLocalhost",
+                    "This module does not operate under <strong>localhost</strong>." .
+                    "Please ensure your website has a resolvable DNS and access the website via the domain."
+                ),
+                "error"
+            );
 
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+            return false;
+        }
 
-        // See comment regarding faking UserAgent in CloudFlare::purgeRequest()
-        curl_setopt($curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36");
+        $url = "https://api.cloudflare.com/client/v4/zones" .
+            "?name={$serverName}" .
+            "&status=active&page=1&per_page=20" .
+            "&order=status&direction=desc&match=all";
 
-        $result = curl_exec($curl);
-        curl_close($curl);
+        $result = $this->curlRequest($url, null, 'GET');
 
-        $array = json_decode($result, TRUE);
+        $array = json_decode($result, true);
 
-        if (!array_key_exists("result", $array) || empty($array[ 'result' ])) {
-            static::isReady(FALSE);
-            static::setAlert("Unable to detect a Zone ID for <strong>{$serverName}</strong> under the user <strong>{$auth['email']}</strong>.<br/><br/>Please create a new zone under this account to use this module on this domain.", "error");
+        if (!is_array($array) || !array_key_exists("result", $array) || empty($array[ 'result' ])) {
+            $this->isReady(false);
+            $this->setAlert(
+                _t(
+                    "CloudFlare.ZoneIdNotFound",
+                    "Unable to detect a Zone ID for <strong>{$serverName}</strong> under the defined CloudFlare" .
+                    " user.<br/><br/>Please create a new zone under this account to use this module on this domain."
+                ),
+                "error"
+            );
 
-            return FALSE;
+            return false;
         }
 
         $zoneID = $array[ 'result' ][ 0 ][ 'id' ];
 
         $factory->save($zoneID, self::CF_ZONE_ID_CACHE_KEY);
 
-        static::isReady(TRUE);
+        $this->isReady(true);
 
         return $zoneID;
 
     }
 
     /**
-     * DRY helper for Purging Cache
+     * Handles requests for cache purging
      *
-     * @param array|NULL $data
+     * @param array|null $data
      * @param string     $method
      *
      * @param null       $isRecursing
      *
      * @return mixed
      */
-    public static function purgeRequest(array $data = NULL, $isRecursing = NULL, $method = 'DELETE')
+    public function purgeRequest(array $data = null, $isRecursing = null, $method = 'DELETE')
     {
         if (array_key_exists('files', $data) && !$isRecursing) {
             // get URL variants
-            $data[ 'files' ] = static::getUrlVariants($data[ 'files' ]);
+            $data[ 'files' ] = $this->getUrlVariants($data[ 'files' ]);
         }
 
         if (array_key_exists('files', $data) && count($data[ 'files' ]) > 500) {
             // slice the array into chunks of 500 then recursively call this function.
             // cloudflare limits cache purging to 500 files per request.
-
             $chunks    = ceil(count($data[ 'files' ]) / 500);
             $start     = 0;
             $responses = array();
 
             for ($i = 0; $i < $chunks; $i++) {
                 $chunk       = array_slice($data[ 'files' ], $start, 500);
-                $result      = static::purgeRequest(array( 'files' => $chunk ), TRUE);
-                $responses[] = json_decode($result, TRUE);
+                $result      = $this->purgeRequest(array('files' => $chunk), true);
+                $responses[] = json_decode($result, true);
                 $start += 500;
             }
 
             return $responses;
         }
 
-        $zoneId = static::fetchZoneID();
-        $auth   = static::getCFCredentials();
-
-        $url = str_replace(":identifier", $zoneId, "https://api.cloudflare.com/client/v4/zones/:identifier/purge_cache");
-
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        $headers = array(
-            "X-Auth-Email: {$auth['email']}",
-            "X-Auth-Key: {$auth['key']}",
-            "Content-Type: application/json"
+        $url = str_replace(
+            ":identifier",
+            $this->fetchZoneID(),
+            "https://api.cloudflare.com/client/v4/zones/:identifier/purge_cache"
         );
 
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-
-        if (!is_null($data)) {
-            if (is_array($data)) {
-                $data = json_encode($data);
-            }
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-        }
-
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-
-        // We have no remorse in faking a UserAgent here as CloudFlare API now actually requires you to.
-        //
-        // Support Msg from CloudFlare Rep (John Roberts):
-        //      Last week, as part of some anti-abuse measures, we started blocking requests with no user-agent.
-        //      Apologies for the side effect, and glad you sorted it quickly.
-        //      We have other measures in place; this was simply an expedient one, since it took advantage of an existing WAF rule.
-        curl_setopt($curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36");
-
-        $result = curl_exec($curl);
-        curl_close($curl);
-
-        return $result;
+        return $this->curlRequest($url, $data, $method);
     }
 
     /**
@@ -484,11 +425,11 @@ class CloudFlare
      *
      * @return array
      */
-    public static function rglob($pattern, $flags = 0)
+    private function rglob($pattern, $flags = 0)
     {
         $files = glob($pattern, $flags);
         foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir) {
-            $files = array_merge($files, static::rglob($dir . '/' . basename($pattern), $flags));
+            $files = array_merge($files, $this->rglob($dir . '/' . basename($pattern), $flags));
         }
 
         return $files;
@@ -503,7 +444,6 @@ class CloudFlare
      */
     public static function convertToAbsolute($files)
     {
-
         $baseUrl = rtrim(Director::absoluteBaseURL(), "/");
 
         if (is_array($files)) {
@@ -524,7 +464,7 @@ class CloudFlare
             return str_replace($_SERVER[ 'DOCUMENT_ROOT' ], $baseUrl, $files);
         }
 
-        return FALSE;
+        return false;
     }
 
     /**
@@ -534,7 +474,7 @@ class CloudFlare
      *
      * @return bool|null
      */
-    public static function isReady($state = NULL)
+    public function isReady($state = null)
     {
         if ($state) {
             self::$ready = (bool)$state;
@@ -542,7 +482,7 @@ class CloudFlare
             return $state;
         }
 
-        self::fetchZoneID();
+        $this->fetchZoneID();
 
         return self::$ready;
     }
@@ -556,17 +496,16 @@ class CloudFlare
      */
     public function findFilesWithExts($extensions)
     {
-
         $files = array();
 
         if (is_array($extensions)) {
             foreach ($extensions as $ext) {
-                $files = array_merge(static::rglob($_SERVER[ 'DOCUMENT_ROOT' ] . "/*{$ext}"), $files);
+                $files = array_merge($this->rglob($_SERVER[ 'DOCUMENT_ROOT' ] . "/*{$ext}"), $files);
             }
         }
 
         if (is_string($extensions)) {
-            $files = static::rglob($_SERVER[ 'DOCUMENT_ROOT' ] . "/*{$extensions}");
+            $files = $this->rglob($_SERVER[ 'DOCUMENT_ROOT' ] . "/*{$extensions}");
         }
 
         return $files;
@@ -575,28 +514,21 @@ class CloudFlare
     /**
      * Converts links to there "Stage" or "Live" counterpart
      *
-     * @param string $to Stage or Live
      * @param array  $urls
      *
      * @return array
      */
-    protected function convertUrl($to = 'Stage', array $urls = array())
+    protected function getStageUrls(array $urls = array())
     {
-        if (!in_array(strtolower($to), array( 'stage', 'live' ))) {
-            throw new \RuntimeException("convertUrl $to param expects either \"Stage\" or \"Live\"");
-        }
-
-        $to = ucfirst(strtolower($to));
-
         foreach ($urls as &$url) {
             $parts = parse_url($url);
             if (isset($parts[ 'query' ])) {
                 parse_str($parts[ 'query' ], $params);
             }
 
-            $params = (isset($parts[ 'query' ])) ? $params : array();
+            $params = (isset($parts[ 'query' ]) && isset($params)) ? $params : array();
 
-            $params[ 'stage' ] = $to;
+            $params[ 'stage' ] = 'Stage';
             $parts[ 'query' ]  = http_build_query($params);
             $url               = $parts[ 'scheme' ] . "://" . $parts[ 'host' ] . $parts[ 'path' ] . '?' . $parts[ 'query' ];
         }
@@ -611,7 +543,7 @@ class CloudFlare
      *
      * @return array
      */
-    public static function getUrlVariants($urls)
+    public function getUrlVariants($urls)
     {
         $output = array();
 
@@ -629,7 +561,7 @@ class CloudFlare
             }
         }
 
-        $stage = static::convertUrl('Stage', $output);
+        $stage = $this->getStageUrls($output);
         $urls  = array_merge($output, $stage);
 
         return $urls;
@@ -638,20 +570,26 @@ class CloudFlare
     /**
      * Get or Set the Session Jar
      *
-     * @param bool $data
-     *
      * @return array|mixed|null|\Session
      */
-    public static function sessionJar($data = NULL)
+    public function getSessionJar()
     {
-        $session = \Session::get('slCloudFlare') ?: (\Session::set('slCloudFlare', array())) ?: \Session::get('slCloudFlare');
-        if (!$data) {
-            return $session;
-        }
+        $session = \Session::get('slCloudFlare') ?: (\Session::set('slCloudFlare',
+            array())) ?: \Session::get('slCloudFlare');
 
+        return $session;
+    }
+
+    /**
+     * @param $data
+     *
+     * @return $this
+     */
+    public function setSessionJar($data)
+    {
         \Session::set('slCloudFlare', $data);
 
-        return static::sessionJar();
+        return $this;
     }
 
     /**
@@ -660,15 +598,194 @@ class CloudFlare
      * @param        $message
      * @param string $type
      */
-    public static function setAlert($message, $type = 'success')
+    public function setAlert($message, $type = 'success')
     {
-        $jar = static::sessionJar();
+        $jar = $this->getSessionJar();
 
-        $jar[ 'CFAlert' ]   = TRUE;
         $jar[ 'CFMessage' ] = $message;
         $jar[ 'CFType' ]    = $type;
 
-        static::sessionJar($jar);
+        $this->setSessionJar($jar);
     }
 
+    /**
+     * Handles/delegates all responses from CloudFlare
+     *
+     * @param      $response
+     * @param null $successMsg
+     * @param null $errorMsg
+     *
+     * @return bool
+     */
+    public function responseHandler($response, $successMsg = null, $errorMsg = null)
+    {
+        if (is_string($response) && !is_array($response = json_decode($response, true))) {
+            // throw error, $response is a string but not JSON
+            if ($this->config()->log_errors) {
+                error_log("silverstripe-cloudflare: The response received from CloudFlare is malformed. Response was: " . print_r($response,
+                        true));
+            }
+
+            return false;
+        }
+
+        if (isset($response[ 0 ])) {
+            return $this->multiResponseHandler($response, $successMsg, $errorMsg);
+        }
+
+        if ($response[ 'success' ]) {
+
+            if ($successMsg) {
+                $this->setToast($successMsg)->setAlert($successMsg);
+            }
+
+            return true;
+        }
+
+        $this->setToast($errorMsg ?: 'CloudFlare: The API responded with an error. See PHP error log for more information');
+        $this->genericErrorHandler($response);
+
+        return false;
+    }
+
+    /**
+     * Handles/delegates multiple responses
+     *
+     * @param array|string $responses
+     * @param null         $successMsg
+     * @param null         $errorMsg
+     *
+     * @return bool
+     */
+    public function multiResponseHandler($responses, $successMsg = null, $errorMsg = null)
+    {
+        if (is_string($responses) && !is_object($responses = json_decode($responses, true))) {
+            // throw error, $response is a string but not JSON
+            if ($this->config()->log_errors) {
+                error_log("silverstripe-cloudflare: The response received from CloudFlare is malformed. Response was: " . print_r($responses,
+                        true));
+            }
+
+            return false;
+        }
+
+        if (isset($responses[ 0 ])) {
+            // request was split and has multiple responses. Ensure that ALL responses were successful.
+            // break on the first failure
+            foreach ($responses as $response) {
+                if (!is_array($response) || !array_key_exists('success', $response) || !$response[ 'success' ]) {
+                    $this->setAlert(
+                        _t(
+                            "CloudFlare.InvalidAPIResponse",
+                            "We didn't get a valid response from CloudFlare. Assume that files still require purging"
+                        ),
+                        "error"
+                    );
+
+                    $this->setToast($errorMsg);
+                    $this->genericErrorHandler($response);
+
+                    return false;
+                }
+            }
+        }
+
+        $this->setAlert($successMsg);
+
+        return true;
+    }
+
+    /**
+     * Sets the X-Status header which creates the toast-like popout notification
+     *
+     * @param $message
+     *
+     * @return $this
+     */
+    public function setToast($message)
+    {
+        Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: ' . $message));
+
+        return $this;
+    }
+
+    /**
+     * This just bloats the code alot so I made a function for it to DRY it up
+     *
+     * @param $response
+     */
+    private function genericErrorHandler($response)
+    {
+        if ($this->config()->log_errors) {
+            error_log(
+                _t(
+                    "CloudFlare.GenericErrorForLog",
+                    "silverstripe-cloudflare: An error occurred:\n\n " . print_r($response, true)
+                )
+            );
+        }
+    }
+
+    /**
+     * Fetch the CloudFlare configuration
+     * @return \Config_ForClass
+     */
+    public static function config()
+    {
+        return \Config::inst()->forClass('CloudFlare');
+    }
+
+    /**
+     * Sends our cURL requests with our custom auth headers
+     *
+     * @param string $url    The URL
+     * @param null   $data   Optional array of data to send
+     * @param string $method GET, PUT, POST, DELETE etc
+     *
+     * @return string JSON
+     */
+    public function curlRequest($url, $data = null, $method = 'DELETE')
+    {
+        if (getenv('TRAVIS')) {
+            $auth = array(
+                'email' => getenv('AUTH_EMAIL'),
+                'key'   => getenv('AUTH_KEY'),
+            );
+        } elseif (!$auth = $this->getCFCredentials()) {
+            user_error("CloudFlare API credentials have not been provided.");
+            die();
+        }
+
+        $headers = array(
+            "X-Auth-Email: {$auth['email']}",
+            "X-Auth-Key: {$auth['key']}",
+            "Content-Type: application/json"
+        );
+
+        $userAgent = "Mozilla/5.0 " .
+            "(Macintosh; Intel Mac OS X 10_11_6) " .
+            "AppleWebKit/537.36 (KHTML, like Gecko) " .
+            "Chrome/53.0.2785.143 Safari/537.36";
+
+        $curl = curl_init();
+
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        // This is intended, and was/is required by CloudFlare at one point
+        curl_setopt($curl, CURLOPT_USERAGENT, $userAgent);
+
+        if (!is_null($data)) {
+            if (is_array($data)) {
+                $data = json_encode($data);
+            }
+            curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        }
+
+        $result = curl_exec($curl);
+        curl_close($curl);
+
+        return $result;
+    }
 }
