@@ -15,7 +15,7 @@ class CloudFlareExt extends SiteTreeExtension
     {
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
-        if (CloudFlare::hasCFCredentials() && strlen($original->URLSegment)) {
+        if (CloudFlare::inst()->hasCFCredentials() && strlen($original->URLSegment)) {
 
             $urls = array(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link());
             $top = $this->getTopLevelParent();
@@ -26,7 +26,7 @@ class CloudFlareExt extends SiteTreeExtension
                 $this->owner->Title != $original->Title // the title has been altered
             ) {
                 // purge everything
-                CloudFlare::purgeAll("A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged");
+                CloudFlare::inst()->purgeAll("A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged");
             }
 
             if ($this->owner->URLSegment != $top->URLSegment) {
@@ -34,12 +34,12 @@ class CloudFlareExt extends SiteTreeExtension
             }
 
             if (count($urls) === 1) {
-                CloudFlare::purgeSingle($urls[0]);
+                CloudFlare::inst()->purgeSingle($urls[0]);
             }
 
             // phpmd will insult me if I use else :'(
             if (count($urls) > 1) {
-                CloudFlare::purgeMany($urls);
+                CloudFlare::inst()->purgeMany($urls);
             }
 
         }
@@ -53,8 +53,8 @@ class CloudFlareExt extends SiteTreeExtension
     public function onAfterUnpublish()
     {
 
-        if (CloudFlare::hasCFCredentials()) {
-            CloudFlare::purgeAll('CloudFlare: All cache has been purged as a result of unpublishing a page.');
+        if (CloudFlare::inst()->hasCFCredentials()) {
+            CloudFlare::inst()->purgeAll('CloudFlare: All cache has been purged as a result of unpublishing a page.');
         }
 
         parent::onBeforeUnpublish();
