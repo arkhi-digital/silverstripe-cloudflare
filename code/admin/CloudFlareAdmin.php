@@ -14,6 +14,10 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
         'purge_javascript',
     );
 
+    /**
+     * @todo Actually implement this
+     * @return array
+     */
     public function providePermissions()
     {
         return array(
@@ -24,6 +28,9 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
         );
     }
 
+    /**
+     * Include our CSS
+     */
     public function init()
     {
         parent::init();
@@ -31,35 +38,42 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
         Requirements::css('cloudflare/css/cloudflare.css');
     }
 
-    public function FormSingleUrlForm()
-    {
-        return CloudFlareSingleUrlForm::create($this, 'purge-single');
-    }
-
+    /**
+     * @return \SS_HTTPResponse|string
+     */
     public function purge_all()
     {
-        CloudFlare::purgeAll();
+        CloudFlare::inst()->purgeAll();
 
         return $this->redirect($this->Link('/'));
     }
 
+    /**
+     * @return \SS_HTTPResponse|string
+     */
     public function purge_css()
     {
-        CloudFlare::purgeCss();
+        CloudFlare::inst()->purgeCss();
 
         return $this->redirect($this->Link('/'));
     }
 
+    /**
+     * @return \SS_HTTPResponse|string
+     */
     public function purge_javascript()
     {
-        CloudFlare::purgeJs();
+        CloudFlare::inst()->purgeJavascript();
 
         return $this->redirect($this->Link('/'));
     }
 
+    /**
+     * @return \SS_HTTPResponse|string
+     */
     public function purge_images()
     {
-        CloudFlare::purgeImages();
+        CloudFlare::inst()->purgeImages();
 
         return $this->redirect($this->Link('/'));
     }
@@ -71,19 +85,26 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function CFAlert()
     {
-        $jar = CloudFlare::sessionJar();
+        $jar = CloudFlare::inst()->getSessionJar();
 
         $array = array(
-            "HasAlert" => (array_key_exists('CFAlert', $jar) && $jar[ 'CFAlert' ]) ? TRUE : FALSE,
             "Type" => (array_key_exists('CFType', $jar)) ? $jar['CFType'] : FALSE,
             "Message" => (array_key_exists('CFMessage', $jar)) ? $jar['CFMessage'] : FALSE,
         );
 
-        $jar['CFAlert'] = false;
-
-        CloudFlare::sessionJar($jar);
-
         return ArrayData::create($array);
+    }
+
+    /**
+     * Destroys the alert message that is saved in session
+     */
+    public function DestroyCFAlert() {
+        $jar = CloudFlare::inst()->getSessionJar();
+
+        $jar['CFType'] = false;
+        $jar['CFMessage'] = false;
+
+        CloudFlare::inst()->setSessionJar($jar);
     }
 
     /**
@@ -92,7 +113,16 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      * @return bool|null
      */
     public function isReady() {
-        return CloudFlare::isReady();
+        return CloudFlare::inst()->isReady();
+    }
+
+    /**
+     * @todo Actually implement this
+     * @return static
+     */
+    public function FormSingleUrlForm()
+    {
+        return CloudFlareSingleUrlForm::create($this, 'purge-single');
     }
 
     /**
@@ -101,7 +131,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      * @return string
      */
     public function ZoneID() {
-        return CloudFlare::fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
+        return CloudFlare::inst()->fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
     }
 
 
