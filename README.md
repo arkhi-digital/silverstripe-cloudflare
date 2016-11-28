@@ -1,6 +1,6 @@
 # silverstripe-cloudflare
 
-[![Code Climate](https://codeclimate.com/github/steadlane/silverstripe-cloudflare/badges/gpa.svg)](https://codeclimate.com/github/steadlane/silverstripe-cloudflare) [![Issue Count](https://codeclimate.com/github/steadlane/silverstripe-cloudflare/badges/issue_count.svg)](https://codeclimate.com/github/steadlane/silverstripe-cloudflare)
+[![Build Status](https://travis-ci.org/steadlane/silverstripe-cloudflare.svg?branch=master)](https://travis-ci.org/steadlane/silverstripe-cloudflare) [![Code Climate](https://codeclimate.com/github/steadlane/silverstripe-cloudflare/badges/gpa.svg)](https://codeclimate.com/github/steadlane/silverstripe-cloudflare) [![Issue Count](https://codeclimate.com/github/steadlane/silverstripe-cloudflare/badges/issue_count.svg)](https://codeclimate.com/github/steadlane/silverstripe-cloudflare)
 
 # Introduction
 
