@@ -1,0 +1,9 @@
+---
+Name: cloudflare
+After:
+  - 'framework/*'
+  - 'cms/*'
+---
+
+CloudFlare:
+  - log_errors: true
