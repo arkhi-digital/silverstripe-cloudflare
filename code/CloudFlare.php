@@ -528,9 +528,8 @@ class CloudFlare
 
             $params = (isset($parts[ 'query' ]) && isset($params)) ? $params : array();
 
-            $params[ 'stage' ] = 'Stage';
-            $parts[ 'query' ]  = http_build_query($params);
-            $url               = $parts[ 'scheme' ] . "://" . $parts[ 'host' ] . $parts[ 'path' ] . '?' . $parts[ 'query' ];
+
+            $url = $url . ((strstr($url, "?")) ? "&stage=Stage" : "?stage=Stage");
         }
 
         return $urls;
