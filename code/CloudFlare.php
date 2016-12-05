@@ -14,17 +14,12 @@ class CloudFlare extends Object
     protected static $ready = false;
 
     /**
-     * @var \CloudFlare
-     */
-    protected static $singleton;
-
-    /**
-     * Instance
+     * Get a singleton instance. Use the default Object functionality
      * @return \CloudFlare
      */
     public static function inst()
     {
-        return (is_object(static::$singleton)) ? static::$singleton : static::$singleton = new CloudFlare();
+        return self::singleton();
     }
 
     /**
