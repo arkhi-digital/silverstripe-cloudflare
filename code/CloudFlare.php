@@ -301,19 +301,24 @@ class CloudFlare extends Object
      */
     public function getServerName()
     {
-        $replaceWith = array(
-            'www.'     => '',
-            'http://'  => '',
-            'https://' => ''
-        );
-
-        $server = \Convert::raw2xml($_SERVER); // "Fixes" #1
-        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server['SERVER_NAME']);
+        $serverName = '';
+        if (!empty($_SERVER['SERVER_NAME'])) {
+            $server = \Convert::raw2xml($_SERVER); // "Fixes" #1
+            $serverName = $server['SERVER_NAME'];
+        }
 
         // CI support
         if (getenv('TRAVIS')) {
             $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
         }
+
+        // Remove protocols, etc
+        $replaceWith = array(
+            'www.'     => '',
+            'http://'  => '',
+            'https://' => ''
+        );
+        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $serverName);
 
         // Allow extensions to modify or replace the server name if required
         $this->extend('updateCloudFlareServerName', $serverName);
