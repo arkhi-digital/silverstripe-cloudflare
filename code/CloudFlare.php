@@ -1,6 +1,6 @@
 <?php
 
-class CloudFlare
+class CloudFlare extends Object
 {
     /**
      * @var string
@@ -16,17 +16,12 @@ class CloudFlare
     protected static $ready = false;
 
     /**
-     * @var \CloudFlare
-     */
-    protected static $singleton;
-
-    /**
-     * Instance
+     * Get a singleton instance. Use the default Object functionality
      * @return \CloudFlare
      */
     public static function inst()
     {
-        return (is_object(static::$singleton)) ? static::$singleton : static::$singleton = new CloudFlare();
+        return self::singleton();
     }
 
     /**
@@ -302,6 +297,38 @@ class CloudFlare
     }
 
     /**
+     * Gathers the current server name, which will be used as the CloudFlare zone ID
+     *
+     * @return string
+     */
+    public function getServerName()
+    {
+        $serverName = '';
+        if (!empty($_SERVER['SERVER_NAME'])) {
+            $server = \Convert::raw2xml($_SERVER); // "Fixes" #1
+            $serverName = $server['SERVER_NAME'];
+        }
+
+        // CI support
+        if (getenv('TRAVIS')) {
+            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
+        }
+
+        // Remove protocols, etc
+        $replaceWith = array(
+            'www.'     => '',
+            'http://'  => '',
+            'https://' => ''
+        );
+        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $serverName);
+
+        // Allow extensions to modify or replace the server name if required
+        $this->extend('updateCloudFlareServerName', $serverName);
+
+        return $serverName;
+    }
+
+    /**
      * Gets the CF Zone ID for the current domain.
      *
      * @return string|bool
@@ -316,19 +343,7 @@ class CloudFlare
             return $cache;
         }
 
-        $replaceWith = array(
-            "www."     => "",
-            "http://"  => "",
-            "https://" => ""
-        );
-
-        $server = Convert::raw2xml($_SERVER); // "Fixes" #1
-
-        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
-
-        if (getenv('TRAVIS')) {
-            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
-        }
+        $serverName = $this->getServerName();
 
         if ($serverName == 'localhost') {
             $this->setAlert(
