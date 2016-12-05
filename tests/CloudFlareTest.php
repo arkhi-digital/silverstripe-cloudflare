@@ -28,20 +28,15 @@ class CloudFlareTest extends SapphireTest
     }
 
     /**
-     * Ensures that the server name can be retrieved as expected from server super global, environment variables
-     * or an extension attached
+     * Ensures that the server name can be retrieved as expected from environment variables or an extension attached
      * @covers ::getServerName
      */
     public function testGetServerName()
     {
-        // Ensures that protocols etc are removed
-        $_SERVER['SERVER_NAME'] = 'https://www.sometest.dev';
-        $this->assertSame('sometest.dev', CloudFlare::inst()->getServerName());
-
-        // Ensures that the CI environment can be factored in
+        // Ensures the CI environment can be factored in
         putenv('TRAVIS=1');
-        putenv('CLOUDFLARE_DUMMY_SITE=anothertest.dev');
-        $this->assertSame('anothertest.dev', CloudFlare::inst()->getServerName());
+        putenv('CLOUDFLARE_DUMMY_SITE=https://www.sometest.dev');
+        $this->assertSame('sometest.dev', CloudFlare::inst()->getServerName());
 
         // Apply a test extension, get a new instance of the CF class and test again to ensure the hook works
         CloudFlare::add_extension('CloudFlareTest_Extension');
