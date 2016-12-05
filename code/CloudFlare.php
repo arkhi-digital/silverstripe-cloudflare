@@ -2,7 +2,9 @@
 
 class CloudFlare
 {
-
+    /**
+     * @var string
+     */
     const CF_ZONE_ID_CACHE_KEY = 'CFZoneID';
 
     /**
@@ -592,6 +594,15 @@ class CloudFlare
     }
 
     /**
+     * Returns the cURL execution timeout limit (seconds)
+     * @var int
+     */
+    public function getCurlTimeout()
+    {
+        return (int) self::config()->curl_timeout;
+    }
+
+    /**
      * Sets an Alert that will display on the CloudFlare LeftAndMain
      *
      * @param        $message
@@ -713,7 +724,7 @@ class CloudFlare
      *
      * @param $response
      */
-    private function genericErrorHandler($response)
+    protected function genericErrorHandler($response)
     {
         if ($this->config()->log_errors) {
             error_log(
@@ -752,7 +763,7 @@ class CloudFlare
             );
         } elseif (!$auth = $this->getCFCredentials()) {
             user_error("CloudFlare API credentials have not been provided.");
-            die();
+            exit;
         }
 
         $headers = array(
@@ -766,11 +777,15 @@ class CloudFlare
             "AppleWebKit/537.36 (KHTML, like Gecko) " .
             "Chrome/53.0.2785.143 Safari/537.36";
 
+        $curlTimeout = $this->getCurlTimeout();
+
         $curl = curl_init();
 
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $curlTimeout);
+        curl_setopt($curl, CURLOPT_TIMEOUT, $curlTimeout);
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         // This is intended, and was/is required by CloudFlare at one point
         curl_setopt($curl, CURLOPT_USERAGENT, $userAgent);
@@ -783,6 +798,12 @@ class CloudFlare
         }
 
         $result = curl_exec($curl);
+
+        // Handle any errors
+        if (false === $result) {
+            user_error(sprintf("Error connecting to CloudFlare:\n%s", curl_error($curl)));
+            exit;
+        }
         curl_close($curl);
 
         return $result;

@@ -6,4 +6,6 @@ After:
 ---
 
 CloudFlare:
-  - log_errors: true
+  log_errors: true
+  # Number of seconds before the cURL request execution will time out
+  curl_timeout: 20
