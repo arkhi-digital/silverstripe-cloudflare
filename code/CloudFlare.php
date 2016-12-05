@@ -1,6 +1,6 @@
 <?php
 
-class CloudFlare
+class CloudFlare extends Object
 {
 
     const CF_ZONE_ID_CACHE_KEY = 'CFZoneID';
@@ -300,6 +300,33 @@ class CloudFlare
     }
 
     /**
+     * Gathers the current server name, which will be used as the CloudFlare zone ID
+     *
+     * @return string
+     */
+    public function getServerName()
+    {
+        $replaceWith = array(
+            'www.'     => '',
+            'http://'  => '',
+            'https://' => ''
+        );
+
+        $server = \Convert::raw2xml($_SERVER); // "Fixes" #1
+        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server['SERVER_NAME']);
+
+        // CI support
+        if (getenv('TRAVIS')) {
+            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
+        }
+
+        // Allow extensions to modify or replace the server name if required
+        $this->extend('updateCloudFlareServerName', $serverName);
+
+        return $serverName;
+    }
+
+    /**
      * Gets the CF Zone ID for the current domain.
      *
      * @return string|bool
@@ -314,19 +341,7 @@ class CloudFlare
             return $cache;
         }
 
-        $replaceWith = array(
-            "www."     => "",
-            "http://"  => "",
-            "https://" => ""
-        );
-
-        $server = Convert::raw2xml($_SERVER); // "Fixes" #1
-
-        $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $server[ 'SERVER_NAME' ]);
-
-        if (getenv('TRAVIS')) {
-            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
-        }
+        $serverName = $this->getServerName();
 
         if ($serverName == 'localhost') {
             $this->setAlert(
