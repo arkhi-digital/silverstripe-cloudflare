@@ -329,18 +329,29 @@ class CloudFlare extends Object
     }
 
     /**
+     * Returns whether caching is enabled for the CloudFlare class instance
+     * @return bool
+     */
+    public function getCacheEnabled()
+    {
+        return (bool) self::config()->cache_enabled === true;
+    }
+
+    /**
      * Gets the CF Zone ID for the current domain.
      *
      * @return string|bool
      */
     public function fetchZoneID()
     {
-        $factory = \SS_Cache::factory("CloudFlare");
+        if ($this->getCacheEnabled()) {
+            $factory = \SS_Cache::factory("CloudFlare");
 
-        if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
-            $this->isReady(true);
+            if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
+                $this->isReady(true);
 
-            return $cache;
+                return $cache;
+            }
         }
 
         $serverName = $this->getServerName();
@@ -381,14 +392,15 @@ class CloudFlare extends Object
             return false;
         }
 
-        $zoneID = $array[ 'result' ][ 0 ][ 'id' ];
+        $zoneID = $array['result'][0]['id'];
 
-        $factory->save($zoneID, self::CF_ZONE_ID_CACHE_KEY);
+        if ($this->getCacheEnabled()) {
+            $factory->save($zoneID, self::CF_ZONE_ID_CACHE_KEY);
+        }
 
         $this->isReady(true);
 
         return $zoneID;
-
     }
 
     /**
