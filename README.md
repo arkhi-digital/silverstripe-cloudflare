@@ -43,6 +43,17 @@ define('CLOUDFLARE_AUTH_EMAIL', 'mycloudflare@example.com.au');
 define('CLOUDFLARE_AUTH_KEY', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 ```
 
+## Cache Rules
+It is recommend that you add the below to your CloudFlare Cache Rules as `no-cache`
+
+| Rule             	| Comments                                                                                                                                                	|
+|------------------	|---------------------------------------------------------------------------------------------------------------------------------------------------------	|
+| `example.com.au/*stage=Stage*` 	| It is outside the scope of this module to handle cache purging for drafts. Drafts should never need to be cached as they're not usable on the front end 	|
+| `example.com.au/Security/*`   	| Prevents caching of the login page etc                                                                                                                  	|
+| `example.com.au/admin/*`      	| Prevents caching of the Administrator Panel                                                                                                             	|
+
+![Bypass Cache Example](http://i.imgur.com/s37SJX4.png)
+
 ## Contributing
 
 If you feel you can improve this module in any way, shape or form please do not hesitate to submit a PR for review.
