@@ -8,3 +8,6 @@ After:
 SiteTree:
   extensions:
     - CloudFlareExt
+LeftAndMain:
+  extensions:
+    - CloudFlareLeftAndMainExtension

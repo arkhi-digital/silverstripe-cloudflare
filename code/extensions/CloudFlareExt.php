@@ -1,11 +1,11 @@
 <?php
-
 /**
  * Class CloudFlareExt
+ *
+ * @package silverstripe-cloudflare
  */
 class CloudFlareExt extends SiteTreeExtension
 {
-
     /**
      * Extension Hook
      *
@@ -123,5 +123,21 @@ class CloudFlareExt extends SiteTreeExtension
         }
     }
 
+    /**
+     * Add a "purge page" CMS action
+     *
+     * @param  FieldList $actions
+     * @return void
+     */
+    public function updateCMSActions(FieldList $actions)
+    {
+        if (!CloudFlare::inst()->hasCFCredentials()) {
+            return;
+        }
 
+        $actions->addFieldToTab(
+            'ActionMenus.MoreOptions',
+            FormAction::create('purgesinglepageAction', 'Purge in CloudFlare')
+        );
+    }
 }
