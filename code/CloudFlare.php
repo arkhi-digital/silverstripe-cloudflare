@@ -92,6 +92,22 @@ class CloudFlare extends Object
     }
 
     /**
+     * Purge a specific SiteTree instance, or by its ID
+     *
+     * @param  SiteTree|int $pageOrId
+     * @return bool
+     */
+    public function purgePage($pageOrId)
+    {
+        if (!($pageOrId instanceof SiteTree)) {
+            $pageOrId = DataObject::get_by_id('SiteTree', $pageOrId);
+        }
+        $page = $pageOrId;
+
+        return $this->purgeSingle($page->Link());
+    }
+
+    /**
      * Same as purgeSingle with the obvious functionality to handle many
      *
      * @param array $filesOrUrls
