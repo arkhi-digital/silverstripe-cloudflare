@@ -16,9 +16,12 @@ class CloudFlareExt extends SiteTreeExtension
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
         if (CloudFlare::inst()->hasCFCredentials() && strlen($original->URLSegment)) {
-
+            $shouldPurgeRelations = CloudFlare::inst()->getShouldPurgeRelations();
             $urls = array(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link());
-            $top = $this->getTopLevelParent();
+
+            if ($shouldPurgeRelations) {
+                $top = $this->getTopLevelParent();
+            }
 
             if (
                 $this->owner->URLSegment != $original->URLSegment || // the slug has been altered
@@ -29,8 +32,10 @@ class CloudFlareExt extends SiteTreeExtension
                 CloudFlare::inst()->purgeAll("A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged");
             }
 
-            if ($this->owner->URLSegment != $top->URLSegment) {
-                $this->getChildrenRecursive($top->ID, $urls);
+            if ($shouldPurgeRelations) {
+                if ($this->owner->URLSegment != $top->URLSegment) {
+                    $this->getChildrenRecursive($top->ID, $urls);
+                }
             }
 
             if (count($urls) === 1) {
