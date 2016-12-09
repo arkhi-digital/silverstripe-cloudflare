@@ -463,6 +463,16 @@ class CloudFlare extends Object
     }
 
     /**
+     * Should we purge related Pages as well as the Page/file/URL that is requested?
+     *
+     * @return bool
+     */
+    public function getShouldPurgeRelations()
+    {
+        return (bool) self::config()->should_purge_relations;
+    }
+
+    /**
      * Recursive Glob Function
      *
      * @param     $pattern
