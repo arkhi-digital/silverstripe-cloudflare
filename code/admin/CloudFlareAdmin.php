@@ -3,9 +3,9 @@
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 {
     private static $url_segment = 'cloudflare';
-    private static $url_rule    = '/$Action/$ID/$OtherID';
-    private static $menu_title  = 'CloudFlare';
-    private static $menu_icon   = 'cloudflare/assets/cloudflare.jpg';
+    private static $url_rule = '/$Action/$ID/$OtherID';
+    private static $menu_title = 'CloudFlare';
+    private static $menu_icon = 'cloudflare/assets/cloudflare.jpg';
 
     private static $allowed_actions = array(
         'purge_all',
@@ -21,9 +21,9 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     public function providePermissions()
     {
         return array(
-            "PURGE_ALL"  => "Purge All Cache",
-            "PURGE_CSS"  => "Purge CSS Cache",
-            "PURGE_JS"   => "Purge JS Cache",
+            "PURGE_ALL" => "Purge All Cache",
+            "PURGE_CSS" => "Purge CSS Cache",
+            "PURGE_JS" => "Purge JS Cache",
             "PURGE_PAGE" => "Purge Page Cache",
         );
     }
@@ -43,7 +43,16 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_all()
     {
-        CloudFlare::inst()->purgeAll();
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->purgeEverything(true)
+            ->setSuccessMessage(
+                _t(
+                    "CloudFlare.PurgedEverything",
+                    "Successfully purged <strong>EVERYTHING</strong> from cache."
+                )
+            )
+            ->purge();
 
         return $this->redirect($this->Link('/'));
     }
@@ -53,7 +62,26 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_css()
     {
-        CloudFlare::inst()->purgeCss();
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->setSuccessMessage(
+                _t(
+                    "CloudFlare.SuccessPurgedCSS",
+                    "Successfully purged {file_count} CSS files from cache."
+                )
+            )
+            ->findFilesWithExts(array(".css", ".css.map"));
+
+        if (!$purger->count()) {
+            CloudFlare_Notifications::handleMessage(
+                _t(
+                    "CloudFlare.NoCSSFilesFound",
+                    "No CSS files were found."
+                )
+            );
+        }
+
+        $purger->purge();
 
         return $this->redirect($this->Link('/'));
     }
@@ -63,7 +91,26 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_javascript()
     {
-        CloudFlare::inst()->purgeJavascript();
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->setSuccessMessage(
+                _t(
+                    "CloudFlare.SuccessPurgedJavascript",
+                    "Successfully purged {file_count} javascript files from cache."
+                )
+            )
+            ->findFilesWithExts(array(".js"));
+
+        if (!$purger->count()) {
+            CloudFlare_Notifications::handleMessage(
+                _t(
+                    "CloudFlare.NoJavascriptFilesFound",
+                    "No javascript files were found."
+                )
+            );
+        }
+
+        $purger->purge();
 
         return $this->redirect($this->Link('/'));
     }
@@ -73,7 +120,26 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_images()
     {
-        CloudFlare::inst()->purgeImages();
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->setSuccessMessage(
+                _t(
+                    "CloudFlare.SuccessPurgedImages",
+                    "Successfully purged {file_count} image files from cache."
+                )
+            )
+            ->findFilesWithExts(array(".jpg", ".jpeg", ".gif", ".png", ".ico", ".bmp", ".svg"));
+
+        if (!$purger->count()) {
+            CloudFlare_Notifications::handleMessage(
+                _t(
+                    "CloudFlare.NoImageFilesFound",
+                    "No image files were found."
+                )
+            );
+        }
+
+        $purger->purge();
 
         return $this->redirect($this->Link('/'));
     }
@@ -98,7 +164,8 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Destroys the alert message that is saved in session
      */
-    public function DestroyCFAlert() {
+    public function DestroyCFAlert()
+    {
         $jar = CloudFlare::inst()->getSessionJar();
 
         $jar['CFType'] = false;
@@ -112,7 +179,8 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      *
      * @return bool|null
      */
-    public function isReady() {
+    public function isReady()
+    {
         return CloudFlare::inst()->isReady();
     }
 
@@ -130,7 +198,8 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      *
      * @return string
      */
-    public function ZoneID() {
+    public function ZoneID()
+    {
         return CloudFlare::inst()->fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
     }
 
