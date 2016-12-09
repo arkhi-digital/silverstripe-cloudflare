@@ -98,12 +98,25 @@ class CloudFlareExtension extends SiteTreeExtension
      */
     public function onAfterUnpublish()
     {
-
         if (CloudFlare::singleton()->hasCFCredentials()) {
-            //CloudFlare::inst()->purgeAll('CloudFlare: All cache has been purged as a result of unpublishing a page.');
             $purger = CloudFlare_Purge::create();
-            $purger->setPurgeEverything(true);
-            $purger->purge();
+            $purger
+                ->setPurgeEverything(true)
+                ->setSuccessMessage(
+                    _t(
+                        "CloudFlare.SuccessAllCachePurged",
+                        "All cache has been purged as a result of unpublishing a page."
+                    )
+                )
+                ->setPurgeEverything(true)
+                ->setSuccessMessage(
+                    _t(
+                        "CloudFlare.FailureAllCachePurged",
+                        "We encountered an error when attempting to purge all cache, Consider doing this manually."
+                    )
+                )
+                ->purge();
+
         }
 
         parent::onBeforeUnpublish();
