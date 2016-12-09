@@ -361,7 +361,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * @param null $bool
+     * @param bool $bool
      * @return $this
      */
     public function setPurgeEverything($bool = null)
@@ -372,7 +372,7 @@ class CloudFlare_Purge extends Object
 
 
     /**
-     * @param mixed $failureMessage
+     * @param string $failureMessage
      * @return $this
      */
     public function setFailureMessage($failureMessage)
@@ -390,7 +390,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * @param mixed $successMessage
+     * @param string $successMessage
      * @return $this
      */
     public function setSuccessMessage($successMessage)

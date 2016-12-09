@@ -127,7 +127,7 @@ class CloudFlare extends Object
      *
      * @param null $customAlert
      *
-     * @return mixed
+     * @return bool
      */
     public function purgeAll($customAlert = null)
     {
@@ -292,7 +292,7 @@ class CloudFlare extends Object
      *
      * @param null $isRecursing
      * @deprecated Moved to CloudFlare_Purge
-     * @return mixed
+     * @return array|string
      */
     public function purgeRequest(array $data = null, $isRecursing = null, $method = 'DELETE')
     {
@@ -308,7 +308,7 @@ class CloudFlare extends Object
      *
      * @param string|array $files
      *
-     * @return mixed
+     * @return array|bool|string
      */
     public static function convertToAbsolute($files)
     {
