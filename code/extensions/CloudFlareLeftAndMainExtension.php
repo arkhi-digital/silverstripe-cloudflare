@@ -24,6 +24,6 @@ class CloudFlareLeftAndMainExtension extends LeftAndMainExtension
             return;
         }
 
-        CloudFlare::inst()->purgePage($request['ID']);
+        CloudFlare_Purge::singleton()->quick('page', $request['ID']);
     }
 }

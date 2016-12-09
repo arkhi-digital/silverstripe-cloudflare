@@ -18,7 +18,7 @@ class CloudFlareExt extends SiteTreeExtension
         if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment)) {
 
             $purger = CloudFlare_Purge::create();
-            $shouldPurgeRelations = CloudFlare::inst()->getShouldPurgeRelations();
+            $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();
             $urls = array(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link());
 
             if ($shouldPurgeRelations) {
@@ -32,12 +32,17 @@ class CloudFlareExt extends SiteTreeExtension
             ) {
                 // purge everything
                 $purger
-                    ->setSuccessMessage("A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged")
-                    ->purgeEverything(true)
+                    ->setSuccessMessage(
+                        _t(
+                            "CloudFlare.SuccessCriticalElementHasChanged",
+                            "A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged"
+                        )
+                    )
+                    ->setPurgeEverything(true)
                     ->purge();
             }
 
-            if ($shouldPurgeRelations) {
+            if ($shouldPurgeRelations && isset($top)) {
                 if ($this->owner->URLSegment != $top->URLSegment) {
                     // this is a little convoluted consider refactoring/renaming
                     $this->getChildrenRecursive($top->ID, $urls);
@@ -47,19 +52,38 @@ class CloudFlareExt extends SiteTreeExtension
             if (count($urls) === 1) {
                 $purger
                     ->reset()
-                    ->setSuccessMessage("Successfully purged cache for the current page")
-                    ->setFailureMessage("An error occurred while attempting to purge cache for the current page")
+                    ->setSuccessMessage(
+                        _t(
+                            "CloudFlare.SuccessPurgeCurrentPage",
+                            "Successfully purged cache for the current page"
+                        )
+                    )
+                    ->setFailureMessage(
+                        _t(
+                            "CloudFlare.FailurePurgeCurrentPage",
+                            "An error occurred while attempting to purge cache for the current page"
+                        )
+                    )
                     ->pushFile($urls[0])
                     ->purge();
             }
 
-            // phpmd will insult me if I use else :'(
             if (count($urls) > 1) {
                 $purger
                     ->reset()
-                    ->setSuccessMessage("CloudFlare cache has been purged for: {file_count} files")
-                    ->setFailureMessage("An error occurred while attempting to purge cache for the current page")
-                    ->pushFiles($urls)
+                    ->setSuccessMessage(
+                        _t(
+                            "CloudFlare.SuccessPurgeMultiple",
+                            "Cache has been purged for: {file_count} files"
+                        )
+                    )
+                    ->setFailureMessage(
+                        _t(
+                            "CloudFlare.FailurePurgeMultiple",
+                            "An error occurred while attempting to purge cache for multiple pages"
+                        )
+                    )
+                    ->pushFile($urls)
                     ->purge();
             }
 
@@ -77,7 +101,7 @@ class CloudFlareExt extends SiteTreeExtension
         if (CloudFlare::singleton()->hasCFCredentials()) {
             //CloudFlare::inst()->purgeAll('CloudFlare: All cache has been purged as a result of unpublishing a page.');
             $purger = CloudFlare_Purge::create();
-            $purger->purgeEverything(true);
+            $purger->setPurgeEverything(true);
             $purger->purge();
         }
 
@@ -155,7 +179,7 @@ class CloudFlareExt extends SiteTreeExtension
      */
     public function updateCMSActions(FieldList $actions)
     {
-        if (!CloudFlare::inst()->hasCFCredentials()) {
+        if (!CloudFlare::singleton()->hasCFCredentials()) {
             return;
         }
 
