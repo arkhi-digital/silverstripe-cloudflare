@@ -88,8 +88,7 @@ class CloudFlareExtension extends SiteTreeExtension
             }
 
         }
-
-        //die(var_dump($purger->getFiles()));
+        
         parent::onAfterPublish($original);
     }
 
