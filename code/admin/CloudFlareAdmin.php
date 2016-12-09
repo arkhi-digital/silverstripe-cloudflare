@@ -3,9 +3,9 @@
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 {
     private static $url_segment = 'cloudflare';
-    private static $url_rule    = '/$Action/$ID/$OtherID';
-    private static $menu_title  = 'CloudFlare';
-    private static $menu_icon   = 'cloudflare/assets/cloudflare.jpg';
+    private static $url_rule = '/$Action/$ID/$OtherID';
+    private static $menu_title = 'CloudFlare';
+    private static $menu_icon = 'cloudflare/assets/cloudflare.jpg';
 
     private static $allowed_actions = array(
         'purge_all',
@@ -21,9 +21,9 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     public function providePermissions()
     {
         return array(
-            "PURGE_ALL"  => "Purge All Cache",
-            "PURGE_CSS"  => "Purge CSS Cache",
-            "PURGE_JS"   => "Purge JS Cache",
+            "PURGE_ALL" => "Purge All Cache",
+            "PURGE_CSS" => "Purge CSS Cache",
+            "PURGE_JS" => "Purge JS Cache",
             "PURGE_PAGE" => "Purge Page Cache",
         );
     }
@@ -43,7 +43,16 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_all()
     {
-        CloudFlare::inst()->purgeAll();
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->setPurgeEverything(true)
+            ->setSuccessMessage(
+                _t(
+                    "CloudFlare.PurgedEverything",
+                    "Successfully purged <strong>EVERYTHING</strong> from cache."
+                )
+            )
+            ->purge();
 
         return $this->redirect($this->Link('/'));
     }
@@ -53,7 +62,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_css()
     {
-        CloudFlare::inst()->purgeCss();
+        CloudFlare_Purge::singleton()->quick('css');
 
         return $this->redirect($this->Link('/'));
     }
@@ -63,7 +72,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_javascript()
     {
-        CloudFlare::inst()->purgeJavascript();
+        CloudFlare_Purge::singleton()->quick('javascript');
 
         return $this->redirect($this->Link('/'));
     }
@@ -73,7 +82,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_images()
     {
-        CloudFlare::inst()->purgeImages();
+        CloudFlare_Purge::singleton()->quick('image');
 
         return $this->redirect($this->Link('/'));
     }
@@ -85,7 +94,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getCredentialsDefined()
     {
-        return (bool) CloudFlare::inst()->hasCFCredentials();
+        return (bool) CloudFlare::singleton()->hasCFCredentials();
     }
 
     /**
@@ -95,7 +104,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function CFAlert()
     {
-        $jar = CloudFlare::inst()->getSessionJar();
+        $jar = CloudFlare::singleton()->getSessionJar();
 
         $array = array(
             "Type" => (array_key_exists('CFType', $jar)) ? $jar['CFType'] : FALSE,
@@ -108,13 +117,14 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Destroys the alert message that is saved in session
      */
-    public function DestroyCFAlert() {
-        $jar = CloudFlare::inst()->getSessionJar();
+    public function DestroyCFAlert()
+    {
+        $jar = CloudFlare::singleton()->getSessionJar();
 
         $jar['CFType'] = false;
         $jar['CFMessage'] = false;
 
-        CloudFlare::inst()->setSessionJar($jar);
+        CloudFlare::singleton()->setSessionJar($jar);
     }
 
     /**
@@ -122,8 +132,9 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      *
      * @return bool|null
      */
-    public function isReady() {
-        return CloudFlare::inst()->isReady();
+    public function isReady()
+    {
+        return CloudFlare::singleton()->isReady();
     }
 
     /**
@@ -140,8 +151,9 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      *
      * @return string
      */
-    public function ZoneID() {
-        return CloudFlare::inst()->fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
+    public function ZoneID()
+    {
+        return CloudFlare::singleton()->fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
     }
 
 

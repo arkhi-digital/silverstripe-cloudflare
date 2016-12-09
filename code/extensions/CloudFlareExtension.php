@@ -4,7 +4,7 @@
  *
  * @package silverstripe-cloudflare
  */
-class CloudFlareExt extends SiteTreeExtension
+class CloudFlareExtension extends SiteTreeExtension
 {
     /**
      * Extension Hook
@@ -15,9 +15,11 @@ class CloudFlareExt extends SiteTreeExtension
     {
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
-        if (CloudFlare::inst()->hasCFCredentials() && strlen($original->URLSegment)) {
-            $shouldPurgeRelations = CloudFlare::inst()->getShouldPurgeRelations();
-            $urls = array(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link());
+        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment)) {
+
+            $purger = CloudFlare_Purge::create();
+            $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();
+            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link(), "/"));
 
             if ($shouldPurgeRelations) {
                 $top = $this->getTopLevelParent();
@@ -29,26 +31,64 @@ class CloudFlareExt extends SiteTreeExtension
                 $this->owner->Title != $original->Title // the title has been altered
             ) {
                 // purge everything
-                CloudFlare::inst()->purgeAll("A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged");
+                $purger
+                    ->setSuccessMessage(
+                        _t(
+                            "CloudFlare.SuccessCriticalElementHasChanged",
+                            "A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged"
+                        )
+                    )
+                    ->setPurgeEverything(true)
+                    ->purge();
             }
 
-            if ($shouldPurgeRelations) {
+            if ($shouldPurgeRelations && isset($top)) {
                 if ($this->owner->URLSegment != $top->URLSegment) {
+                    // this is a little convoluted consider refactoring/renaming
                     $this->getChildrenRecursive($top->ID, $urls);
                 }
             }
 
             if (count($urls) === 1) {
-                CloudFlare::inst()->purgeSingle($urls[0]);
+                $purger
+                    ->reset()
+                    ->setSuccessMessage(
+                        _t(
+                            "CloudFlare.SuccessPurgeCurrentPage",
+                            "Successfully purged cache for the current page"
+                        )
+                    )
+                    ->setFailureMessage(
+                        _t(
+                            "CloudFlare.FailurePurgeCurrentPage",
+                            "An error occurred while attempting to purge cache for the current page"
+                        )
+                    )
+                    ->pushFile($urls[0])
+                    ->purge();
             }
 
-            // phpmd will insult me if I use else :'(
             if (count($urls) > 1) {
-                CloudFlare::inst()->purgeMany($urls);
+                $purger
+                    ->reset()
+                    ->setSuccessMessage(
+                        _t(
+                            "CloudFlare.SuccessPurgeMultiple",
+                            "Cache has been purged for: {file_count} files"
+                        )
+                    )
+                    ->setFailureMessage(
+                        _t(
+                            "CloudFlare.FailurePurgeMultiple",
+                            "An error occurred while attempting to purge cache for multiple pages"
+                        )
+                    )
+                    ->pushFile($urls)
+                    ->purge();
             }
 
         }
-
+        
         parent::onAfterPublish($original);
     }
 
@@ -57,9 +97,25 @@ class CloudFlareExt extends SiteTreeExtension
      */
     public function onAfterUnpublish()
     {
+        if (CloudFlare::singleton()->hasCFCredentials()) {
+            $purger = CloudFlare_Purge::create();
+            $purger
+                ->setPurgeEverything(true)
+                ->setSuccessMessage(
+                    _t(
+                        "CloudFlare.SuccessAllCachePurged",
+                        "All cache has been purged as a result of unpublishing a page."
+                    )
+                )
+                ->setPurgeEverything(true)
+                ->setSuccessMessage(
+                    _t(
+                        "CloudFlare.FailureAllCachePurged",
+                        "We encountered an error when attempting to purge all cache, Consider doing this manually."
+                    )
+                )
+                ->purge();
 
-        if (CloudFlare::inst()->hasCFCredentials()) {
-            CloudFlare::inst()->purgeAll('CloudFlare: All cache has been purged as a result of unpublishing a page.');
         }
 
         parent::onBeforeUnpublish();
@@ -136,7 +192,7 @@ class CloudFlareExt extends SiteTreeExtension
      */
     public function updateCMSActions(FieldList $actions)
     {
-        if (!CloudFlare::inst()->hasCFCredentials()) {
+        if (!CloudFlare::singleton()->hasCFCredentials()) {
             return;
         }
 
