@@ -151,7 +151,7 @@ class CloudFlare_Purge extends Object
         // by getUrlVariants(). However without it cloudflare will respond with an error similar to:
         // "You may only purge files for this zone only"
         $baseUrl = "http://" . CloudFlare::singleton()->getServerName() . "/";
-        $rootDir = str_replace("//", "/", $_SERVER['DOCUMENT_ROOT'] . Director::baseURL());
+        $rootDir = str_replace("//", "/", $_SERVER['DOCUMENT_ROOT']);
 
         if (is_array($files)) {
             foreach ($files as $index => $file) {
