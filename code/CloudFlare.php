@@ -52,7 +52,7 @@ class CloudFlare extends Object
         if ($this->hasCFCredentials()) {
             return array(
                 'email' => CLOUDFLARE_AUTH_EMAIL,
-                'key' => CLOUDFLARE_AUTH_KEY
+                'key'   => CLOUDFLARE_AUTH_KEY
             );
         }
 
@@ -66,6 +66,7 @@ class CloudFlare extends Object
      * @deprecated This method will be removed in favor for CloudFlare_Purge functionality
      *
      * @param $fileOrUrl
+     *
      * @return bool
      */
     public function purgeSingle($fileOrUrl)
@@ -79,6 +80,22 @@ class CloudFlare extends Object
             ->purge();
 
         return $purger->getResponse();
+    }
+
+    /**
+     * Purge a specific SiteTree instance, or by its ID
+     *
+     * @param  SiteTree|int $pageOrId
+     * @return bool
+     */
+    public function purgePage($pageOrId)
+    {
+        if (!($pageOrId instanceof SiteTree)) {
+            $pageOrId = DataObject::get_by_id('SiteTree', $pageOrId);
+        }
+        $page = $pageOrId;
+
+        return $this->purgeSingle($page->Link());
     }
 
     /**
@@ -433,8 +450,8 @@ class CloudFlare extends Object
      * @deprecated Moved to CloudFlare_Purge
      *
      * @param array|string $responses
-     * @param null $successMsg
-     * @param null $errorMsg
+     * @param null         $successMsg
+     * @param null         $errorMsg
      *
      * @return bool
      */
@@ -451,8 +468,6 @@ class CloudFlare extends Object
      *
      * @deprecated See CloudFlare_Notifications::handleMessage()
      * @param $message
-     *
-     * @return CloudFlare_Notifications
      */
     public function setToast($message)
     {
@@ -502,8 +517,8 @@ class CloudFlare extends Object
     /**
      * Sends our cURL requests with our custom auth headers
      *
-     * @param string $url The URL
-     * @param null $data Optional array of data to send
+     * @param string $url    The URL
+     * @param null   $data   Optional array of data to send
      * @param string $method GET, PUT, POST, DELETE etc
      *
      * @return string JSON

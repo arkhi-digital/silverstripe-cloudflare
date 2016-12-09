@@ -11,3 +11,5 @@ CloudFlare:
   curl_timeout: 20
   # Whether caching is enabled for the CloudFlare class. With multiple zones, this needs to be disabled.
   cache_enabled: true
+  # Whether to purge related pages on publish as well
+  should_purge_relations: true

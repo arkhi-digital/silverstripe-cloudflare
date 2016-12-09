@@ -1,11 +1,11 @@
 <?php
-
 /**
  * Class CloudFlareExt
+ *
+ * @package silverstripe-cloudflare
  */
 class CloudFlareExt extends SiteTreeExtension
 {
-
     /**
      * Extension Hook
      *
@@ -18,9 +18,12 @@ class CloudFlareExt extends SiteTreeExtension
         if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment)) {
 
             $purger = CloudFlare_Purge::create();
-
+            $shouldPurgeRelations = CloudFlare::inst()->getShouldPurgeRelations();
             $urls = array(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link());
-            $top = $this->getTopLevelParent();
+
+            if ($shouldPurgeRelations) {
+                $top = $this->getTopLevelParent();
+            }
 
             if (
                 $this->owner->URLSegment != $original->URLSegment || // the slug has been altered
@@ -34,9 +37,11 @@ class CloudFlareExt extends SiteTreeExtension
                     ->purge();
             }
 
-            if ($this->owner->URLSegment != $top->URLSegment) {
-                // this is a little convoluted consider refactoring/renaming
-                $this->getChildrenRecursive($top->ID, $urls);
+            if ($shouldPurgeRelations) {
+                if ($this->owner->URLSegment != $top->URLSegment) {
+                    // this is a little convoluted consider refactoring/renaming
+                    $this->getChildrenRecursive($top->ID, $urls);
+                }
             }
 
             if (count($urls) === 1) {
@@ -142,5 +147,21 @@ class CloudFlareExt extends SiteTreeExtension
         }
     }
 
+    /**
+     * Add a "purge page" CMS action
+     *
+     * @param  FieldList $actions
+     * @return void
+     */
+    public function updateCMSActions(FieldList $actions)
+    {
+        if (!CloudFlare::inst()->hasCFCredentials()) {
+            return;
+        }
 
+        $actions->addFieldToTab(
+            'ActionMenus.MoreOptions',
+            FormAction::create('purgesinglepageAction', 'Purge in CloudFlare')
+        );
+    }
 }

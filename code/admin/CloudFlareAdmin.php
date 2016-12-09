@@ -145,6 +145,16 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
+     * Gets whether the required CloudFlare credentials are defined.
+     *
+     * @return bool
+     */
+    public function getCredentialsDefined()
+    {
+        return (bool) CloudFlare::inst()->hasCFCredentials();
+    }
+
+    /**
      * Template function to check for a response "alert" from CloudFlare functionality
      *
      * @return ArrayData
