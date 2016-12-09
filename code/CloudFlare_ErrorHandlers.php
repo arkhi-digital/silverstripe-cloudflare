@@ -15,7 +15,7 @@ class CloudFlare_ErrorHandlers extends Object
 
     public static function malformed($response)
     {
-        self::log(sprintf("The API response was malformed:\r\n%s", print_r($response)));
+        self::log(sprintf("The API response was malformed:\r\n%s", print_r($response, true)));
     }
 
     public static function log($message, $force = null)
