@@ -479,7 +479,7 @@ class CloudFlare_Purge extends Object
             $page = $other_id;
 
             $purger
-                ->pushFile($page->Link())
+                ->pushFile(str_replace("//","/",$_SERVER['DOCUMENT_ROOT'] . "/" .$page->Link()))
                 ->setSuccessMessage('Cache has been purged for: ' . $page->Link())
                 ->purge();
 
