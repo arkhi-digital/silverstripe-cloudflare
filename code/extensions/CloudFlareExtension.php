@@ -4,7 +4,7 @@
  *
  * @package silverstripe-cloudflare
  */
-class CloudFlareExt extends SiteTreeExtension
+class CloudFlareExtension extends SiteTreeExtension
 {
     /**
      * Extension Hook
@@ -19,7 +19,7 @@ class CloudFlareExt extends SiteTreeExtension
 
             $purger = CloudFlare_Purge::create();
             $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();
-            $urls = array(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link());
+            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link(), "/"));
 
             if ($shouldPurgeRelations) {
                 $top = $this->getTopLevelParent();
@@ -89,6 +89,7 @@ class CloudFlareExt extends SiteTreeExtension
 
         }
 
+        //die(var_dump($purger->getFiles()));
         parent::onAfterPublish($original);
     }
 
