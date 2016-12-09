@@ -60,7 +60,7 @@ class CloudFlare extends Object
     }
 
     /**
-     * Purges CloudFlare's cache for URL provided. We currently don't care for the response
+     * Purges CloudFlare's cache for URL provided.
      *
      * @note The CloudFlare API sets a maximum of 1,200 requests in a five minute period.
      * @deprecated This method will be removed in favor for CloudFlare_Purge functionality
@@ -85,17 +85,16 @@ class CloudFlare extends Object
     /**
      * Purge a specific SiteTree instance, or by its ID
      *
+     * @deprecated This method will be removed in favor for CloudFlare_Purge functionality
+
      * @param  SiteTree|int $pageOrId
      * @return bool
      */
     public function purgePage($pageOrId)
     {
-        if (!($pageOrId instanceof SiteTree)) {
-            $pageOrId = DataObject::get_by_id('SiteTree', $pageOrId);
-        }
-        $page = $pageOrId;
+        Deprecation::notice('2.0', 'This method will be removed in favor for CloudFlare_Purge functionality');
 
-        return $this->purgeSingle($page->Link());
+        return CloudFlare_Purge::singleton()->quick('page', $pageOrId);
     }
 
     /**
@@ -134,7 +133,7 @@ class CloudFlare extends Object
     {
         Deprecation::notice('2.0', 'This method will be removed in favor for CloudFlare_Purge functionality');
 
-        return CloudFlareAdmin::singleton()->purge_all();
+        return CloudFlare_Purge::singleton()->quick('all');
     }
 
     /**
@@ -148,7 +147,7 @@ class CloudFlare extends Object
     {
         Deprecation::notice('2.0', 'This method will be removed in favor for CloudFlare_Purge functionality');
 
-        return CloudFlareAdmin::singleton()->purge_css();
+        return CloudFlare_Purge::singleton()->quick('css');
     }
 
     /**
@@ -162,7 +161,7 @@ class CloudFlare extends Object
     {
         Deprecation::notice('2.0', 'This method will be removed in favor for CloudFlare_Purge functionality');
 
-        return CloudFlareAdmin::singleton()->purge_javascript();
+        return CloudFlare_Purge::singleton()->quick('javascript');
 
     }
 
@@ -175,7 +174,7 @@ class CloudFlare extends Object
     {
         Deprecation::notice('2.0', 'This method will be removed in favor for CloudFlare_Purge functionality');
 
-        return CloudFlareAdmin::singleton()->purge_images();
+        return CloudFlare_Purge::singleton()->quick('image');
     }
 
     /**
@@ -361,7 +360,7 @@ class CloudFlare extends Object
      */
     protected function getStageUrls(array $urls = array())
     {
-        Deprecation::notice('2.0', 'This module will no longer support purging stage URLs, instead see the README for setting up page rules');
+        Deprecation::notice('2.0', 'This module will no longer support purging stage URLs, instead see the README for setting up our recommended page rules for SilverStripe');
 
         foreach ($urls as &$url) {
             $parts = parse_url($url);
@@ -431,17 +430,19 @@ class CloudFlare extends Object
      *
      * @deprecated Moved to CloudFlare_Purge
      *
-     * @param      $response
-     * @param null $successMsg
-     * @param null $errorMsg
+     * @param $response
      *
      * @return bool
+     * @internal   param null $successMsg
+     * @internal   param null $errorMsg
+     *
      */
-    public function responseHandler($response, $successMsg = null, $errorMsg = null)
+    public function responseHandler($response)
     {
         Deprecation::notice('2.0', 'This method has been moved to CloudFlare_Purge');
-
-        return CloudFlare_Purge::singleton()->responseHandler($response, $successMsg, $errorMsg);
+        $purger = CloudFlare_Purge::create();
+        
+        return $purger->setResponse($response)->isSuccessful();
     }
 
     /**
@@ -450,16 +451,18 @@ class CloudFlare extends Object
      * @deprecated Moved to CloudFlare_Purge
      *
      * @param array|string $responses
-     * @param null         $successMsg
-     * @param null         $errorMsg
      *
      * @return bool
+     * @internal   param null $successMsg
+     * @internal   param null $errorMsg
      */
-    public function multiResponseHandler($responses, $successMsg = null, $errorMsg = null)
+    public function multiResponseHandler($responses)
     {
         Deprecation::notice('2.0', 'This method has been moved to CloudFlare_Purge');
 
-        return CloudFlare_Purge::singleton()->multiResponseHandler($responses, $successMsg, $errorMsg);
+        $purger = CloudFlare_Purge::create();
+
+        return $purger->setResponse($responses)->isSuccessful();
 
     }
 
@@ -481,10 +484,11 @@ class CloudFlare extends Object
      *
      * @deprecated See CloudFlare_Notifications::handleMessage()
      *
-     * @param        $message
-     * @param string $type
+     * @param $message
+     *
+     * @internal   param string $type
      */
-    public function setAlert($message, $type = 'success')
+    public function setAlert($message)
     {
         Deprecation::notice('2.0', 'This method has been removed to CloudFlare_Notifications::handleMessage()');
 
@@ -534,6 +538,11 @@ class CloudFlare extends Object
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $curlTimeout);
         curl_setopt($curl, CURLOPT_TIMEOUT, $curlTimeout);
+
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, TRUE);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+
         curl_setopt($curl, CURLOPT_HTTPHEADER, $this->getAuthHeaders());
         // This is intended, and was/is required by CloudFlare at one point
         curl_setopt($curl, CURLOPT_USERAGENT, $this->getUserAgent());

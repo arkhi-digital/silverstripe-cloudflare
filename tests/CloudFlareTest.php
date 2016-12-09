@@ -13,6 +13,10 @@ class CloudFlareTest extends SapphireTest
      */
     public function testGetServerName()
     {
+        // remove any user defined extension that updates the server name
+        // so that tests run locally in this scenario
+        $this->removeExtensibleMethod('updateCloudFlareServerName');
+
         // Ensures the CI environment can be factored in
         putenv('TRAVIS=1');
         putenv('CLOUDFLARE_DUMMY_SITE=https://www.sometest.dev');
@@ -21,6 +25,23 @@ class CloudFlareTest extends SapphireTest
         // Apply a test extension, get a new instance of the CF class and test again to ensure the hook works
         CloudFlare::add_extension('CloudFlareTest_Extension');
         $this->assertSame('extended.dev', CloudFlare::create()->getServerName());
+    }
+
+    /**
+     * Removes a user defined extension if it contains the provided method so that it cannot conflict with
+     * our tests locally
+     *
+     * @param $method
+     */
+    public function removeExtensibleMethod($method) {
+        $extensions = Object::get_extensions('CloudFlare');
+        foreach ($extensions as $class) {
+            $tmp = new $class();
+            if (method_exists($tmp, $method)) {
+                CloudFlare::remove_extension($class);
+            }
+            unset($tmp);
+        }
     }
 }
 

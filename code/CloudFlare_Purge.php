@@ -29,6 +29,21 @@ class CloudFlare_Purge extends Object
     protected $response;
 
     /**
+     * @var array
+     */
+    protected $fileTypes = array(
+        'image' => array(
+            "bmp" ,"gif" ,"jpg" ,"jpeg" ,"pcx" ,"tif" ,"png" ,"alpha","als" ,"cel" ,"icon" ,"ico" ,"ps", "svg"
+        ),
+        'javascript' => array(
+            "js"
+        ),
+        'css' => array(
+            'css', 'cssmap'
+        )
+    );
+
+    /**
      * @var string
      */
     protected static $endpoint = "https://api.cloudflare.com/client/v4/zones/:identifier/purge_cache";
@@ -40,7 +55,7 @@ class CloudFlare_Purge extends Object
     public function setFiles(array $files)
     {
         $this->clearFiles();
-        $this->pushFiles($files);
+        $this->pushFile($files);
 
         return $this;
     }
@@ -56,27 +71,14 @@ class CloudFlare_Purge extends Object
         }
 
         if (is_array($file)) {
-            return $this->pushFiles($file);
+            foreach ($file as $pointer) {
+                $this->pushFile($pointer);
+            }
+
+            return $this;
         }
 
         array_push($this->files, $this->convertToAbsolute($file));
-
-        return $this;
-    }
-
-    /**
-     * @param $files
-     * @return CloudFlare_Purge
-     */
-    public function pushFiles($files)
-    {
-        if (is_string($files)) {
-            return $this->pushFile($files);
-        }
-
-        foreach ($files as $file) {
-            $this->pushFile($file);
-        }
 
         return $this;
     }
@@ -96,15 +98,15 @@ class CloudFlare_Purge extends Object
 
         if (is_array($extensions)) {
             foreach ($extensions as $ext) {
-                $files = array_merge($this->rglob($rootDir . "/*{$ext}"), $files);
+                $files = array_merge($this->rglob(rtrim($rootDir, "/") . "/*.{$ext}"), $files);
             }
         }
 
         if (is_string($extensions)) {
-            $files = $this->rglob($rootDir . "/*{$extensions}");
+            $files = $this->rglob(rtrim($rootDir, "/") . "/*{$extensions}");
         }
 
-        $this->pushFiles($this->convertToAbsolute($files));
+        $this->pushFile($files);
 
         return $this;
     }
@@ -121,6 +123,14 @@ class CloudFlare_Purge extends Object
     {
         $files = glob($pattern, $flags);
         foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir) {
+            if (basename($dir) == 'framework') {
+                continue;
+            }
+            // if we implode the array we should be able to search for all extensions at once like below
+            // http://stackoverflow.com/a/23969253/2266583 w/ GLOB_BRACE
+            // however it would always return no files for me, so i'll just leave it here for now
+            // $files = array_merge($this->rglob(rtrim($rootDir, "/") . '/*.{'.$extensions.'}'), $files);
+            ////////////////////////////////////////
             $files = array_merge($files, $this->rglob($dir . '/' . basename($pattern), $flags));
         }
 
@@ -128,19 +138,20 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * Converts /public_html/path/to/file.ext to example.com/path/to/file.ext
+     * Converts /public_html/path/to/file.ext to example.com/path/to/file.ext, it is perfectly safe to hand this
+     * an "already absolute" url.
      *
      * @param string|array $files
      *
-     * @return mixed
+     * @return string|array|bool Dependent on input, returns false if input is neither an array, or a string.
      */
     public function convertToAbsolute($files)
     {
         // It's not the best feeling to have to add http:// here, despite it's SSL variant being picked up
-        // by getUrlVariants(). However without it cloudflare will response with an error similiar to:
+        // by getUrlVariants(). However without it cloudflare will respond with an error similar to:
         // "You may only purge files for this zone only"
         $baseUrl = "http://" . CloudFlare::singleton()->getServerName() . "/";
-        $rootDir = $_SERVER['DOCUMENT_ROOT'] . Director::baseURL();
+        $rootDir = str_replace("//", "/", $_SERVER['DOCUMENT_ROOT'] . Director::baseURL());
 
         if (is_array($files)) {
             foreach ($files as $index => $file) {
@@ -174,7 +185,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     *
+     * @return $this
      */
     public function purge()
     {
@@ -196,25 +207,14 @@ class CloudFlare_Purge extends Object
 
         $success = $this->isSuccessful();
 
-        if ($success && $this->getSuccessMessage()) {
-            CloudFlare_Notifications::handleMessage(
-                $this->getSuccessMessage(),
-                array(
-                    'file_count' => $this->count()
-                )
-            );
-        }
+        CloudFlare_Notifications::handleMessage(
+            ($success) ? ($this->getSuccessMessage() ?: false) : ($this->getFailureMessage() ?: false),
+            array(
+                'file_count' => $this->count()
+            )
+        );
 
-        if (!$success && $this->getFailureMessage()) {
-            CloudFlare_Notifications::handleMessage(
-                $this->getFailureMessage(),
-                array(
-                    'file_count' => $this->count()
-                )
-            );
-        }
-
-        return $success;
+        return $this;
     }
 
     /**
@@ -227,12 +227,16 @@ class CloudFlare_Purge extends Object
 
     /**
      * @param $response
+     *
+     * @return $this
      */
-    private function setResponse($response)
+    public function setResponse($response)
     {
         $this->extend("onBeforeSetResponse", $response);
 
         $this->response = $response;
+
+        return $this;
     }
 
     /**
@@ -241,8 +245,8 @@ class CloudFlare_Purge extends Object
      * @param array|null $data
      * @param string $method
      *
-     * @param null $isRecursing
-     * @return mixed
+     * @param bool $isRecursing
+     * @return string|array
      */
     public function handleRequest(array $data = null, $isRecursing = null, $method = 'DELETE')
     {
@@ -303,7 +307,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getEndpoint()
     {
@@ -314,7 +318,7 @@ class CloudFlare_Purge extends Object
     /**
      * @return bool
      */
-    protected function isSuccessful()
+    public function isSuccessful()
     {
         $response = $this->getResponse();
 
@@ -344,7 +348,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * @return mixed
+     * @return array
      */
     public function getResponse()
     {
@@ -360,7 +364,7 @@ class CloudFlare_Purge extends Object
      * @param null $bool
      * @return $this
      */
-    public function purgeEverything($bool = null)
+    public function setPurgeEverything($bool = null)
     {
         $this->purgeEverything = ($bool);
         return $this;
@@ -378,7 +382,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * @return mixed
+     * @return string|null
      */
     public function getFailureMessage()
     {
@@ -396,7 +400,7 @@ class CloudFlare_Purge extends Object
     }
 
     /**
-     * @return mixed
+     * @return string|null
      */
     public function getSuccessMessage()
     {
@@ -422,12 +426,96 @@ class CloudFlare_Purge extends Object
 
     /**
      * Clears files
+     *
+     * @return $this
      */
     public function clearFiles()
     {
         $this->files = null;
 
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getFileTypes() {
+
+        $types = $this->fileTypes;
+        $this->extend('updateCloudFlarePurgeFileTypes', $types);
+
+        return $types;
+    }
+
+    /**
+     * Allows you to quickly purge cache for particular files defined in $fileTypes (See ::getFileTypes() for an
+     * extension point to update file types)
+     *
+     * @param string $what E.g 'image', 'javascript', 'css', or user defined
+     *
+     * @param null   $other_id Allows you to provide a Page ID for example
+     *
+     * @return bool
+     */
+    public function quick($what, $other_id = null) {
+        // create a new instance of self so we don't interrupt anything
+        $purger = self::create();
+        $what = trim(strtolower($what));
+
+        if ($what == 'page' && isset($other_id)) {
+            if (!($other_id instanceof SiteTree)) {
+                $other_id = DataObject::get_by_id('SiteTree', $other_id);
+            }
+            $page = $other_id;
+
+            $purger
+                ->pushFile($page->Link())
+                ->setSuccessMessage('Cache has been purged for: ' . $page->Link())
+                ->purge();
+
+            return $purger->isSuccessful();
+        }
+
+        if ($what == 'all') {
+            $purger->setPurgeEverything(true)->purge();
+            return $purger->isSuccessful();
+        }
+
+        $fileTypes = $this->getFileTypes();
+
+        if (!isset($fileTypes[$what])) {
+            user_error("Attempted to purge all {$what} types but it has no file extension list defined. See CloudFlare_Purge::\$fileTypes", E_USER_ERROR);
+        }
+
+        $purger->findFilesWithExts($fileTypes[$what]);
+
+        if (!$purger->count()) {
+            CloudFlare_Notifications::handleMessage(
+                _t(
+                    "CloudFlare.NoFilesToPurge",
+                    "No {what} files were found to purge.",
+                    "",
+                    array(
+                        "what" => $what
+                    )
+                )
+            );
+        } else {
+            $purger->setSuccessMessage(
+                _t(
+                    "CloudFlare.SuccessFilesPurged",
+                    "Successfully purged {file_count} {what} files from cache.",
+                    "",
+                    array(
+                        "what" => $what
+                    )
+                )
+            );
+
+            $purger->purge();
+        }
+
+        return $purger->isSuccessful();
     }
 
 }

@@ -6,7 +6,7 @@ class CloudFlare_Notifications extends Object
     /**
      * Sets the X-Status header which creates the toast-like popout notification
      *
-     * @param $message
+     * @param string $message
      */
     protected static function setToast($message)
     {
@@ -16,7 +16,7 @@ class CloudFlare_Notifications extends Object
     /**
      * Sets an Alert that will display on the CloudFlare LeftAndMain
      *
-     * @param        $message
+     * @param string $message
      * @param string $type
      */
     protected static function setAlert($message, $type = 'success')
@@ -33,11 +33,15 @@ class CloudFlare_Notifications extends Object
      * Determines the origin of the request, if AJAX the message will be provided in X-Status, otherwise display
      * in interface
      *
-     * @param $message
-     * @param null $params
+     * @param string $message
+     * @param array $params
      */
     public static function handleMessage($message, $params = null)
     {
+        if (!$message) {
+            return;
+        }
+
         if (is_array($params)) {
             if (!ArrayLib::is_associative($params)) {
                 user_error("The second parameter for handleMessage must be an associative array", E_USER_ERROR);
