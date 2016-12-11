@@ -95,6 +95,7 @@ class CloudFlare_PurgeTest extends SapphireTest
      */
     public function testPurgeEverything()
     {
+        echo getenv('CLOUDFLARE_DUMMY_SITE');
         if (!isset($_REQUEST[ 'force' ]) && !getenv('TRAVIS')) {
             return;
         }

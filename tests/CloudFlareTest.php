@@ -17,9 +17,9 @@ class CloudFlareTest extends SapphireTest
         $this->removeExtensibleMethod('updateCloudFlareServerName');
 
         // Ensures the CI environment can be factored in
-        putenv('TRAVIS=1');
+        /*putenv('TRAVIS=1');
         putenv('CLOUDFLARE_DUMMY_SITE=https://www.sometest.dev');
-        $this->assertSame('sometest.dev', CloudFlare::singleton()->getServerName());
+        $this->assertSame('sometest.dev', CloudFlare::singleton()->getServerName());*/
 
         // Apply a test extension, get a new instance of the CF class and test again to ensure the hook works
         CloudFlare::add_extension('CloudFlareTest_Extension');
