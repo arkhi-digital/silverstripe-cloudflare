@@ -34,7 +34,7 @@ class CloudFlareExtension extends SiteTreeExtension
                 $purger
                     ->setSuccessMessage(
                         _t(
-                            "CloudFlare.SuccessCriticalElementHasChanged",
+                            "CloudFlare.SuccessCriticalElementChanged",
                             "A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged"
                         )
                     )
@@ -103,7 +103,7 @@ class CloudFlareExtension extends SiteTreeExtension
                 ->setPurgeEverything(true)
                 ->setSuccessMessage(
                     _t(
-                        "CloudFlare.SuccessAllCachePurged",
+                        "CloudFlare.UnpublishAllCachePurged",
                         "All cache has been purged as a result of unpublishing a page."
                     )
                 )
@@ -111,7 +111,7 @@ class CloudFlareExtension extends SiteTreeExtension
                 ->setSuccessMessage(
                     _t(
                         "CloudFlare.FailureAllCachePurged",
-                        "We encountered an error when attempting to purge all cache, Consider doing this manually."
+                        "We encountered an error when attempting to purge all cache, consider doing this manually."
                     )
                 )
                 ->purge();
@@ -198,7 +198,12 @@ class CloudFlareExtension extends SiteTreeExtension
 
         $actions->addFieldToTab(
             'ActionMenus.MoreOptions',
-            FormAction::create('purgesinglepageAction', 'Purge in CloudFlare')
+            FormAction::create('purgesinglepageAction', 
+                _t(
+                    'CloudFlare.ActionMenuPurge',
+                    'Purge in CloudFlare'
+                )
+            )
         );
     }
 }

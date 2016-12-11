@@ -264,8 +264,12 @@ class CloudFlare extends Object
             CloudFlare_Notifications::handleMessage(
                 _t(
                     "CloudFlare.ZoneIdNotFound",
-                    "Unable to detect a Zone ID for <strong>{$serverName}</strong> under the defined CloudFlare" .
-                    " user.<br/><br/>Please create a new zone under this account to use this module on this domain."
+                    "Unable to detect a Zone ID for <strong>{server_name}</strong> under the defined CloudFlare" .
+                    " user.<br/><br/>Please create a new zone under this account to use this module on this domain.",
+                    "",
+                    array(
+                        "server_name" => $serverName
+                    )
                 ),
                 "error"
             );
