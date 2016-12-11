@@ -9,6 +9,7 @@ en:
     SingleFileLabel: "Single File / URL"
     ProvidedFileNotFound: "Please provide a valid file to purge first"
     FailurePurgeProvidedFile: "An error occurred while attempting to purge the provided file(s)"
+    NoPermission: "You do not have permission to do that..."
     NoCredentialsDefined: "No CloudFlare credentials have been defined. Please see the readme to find out more."
     ModuleFooterLabel: "CloudFlare Module"
     NoLocalhost: "This module does not operate under <strong>localhost</strong>. Please ensure your website has a resolvable DNS and access the website via the domain."

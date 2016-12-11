@@ -15,7 +15,7 @@ class CloudFlareExtension extends SiteTreeExtension
     {
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
-        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment)) {
+        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment) && CloudFlare::singleton()->canUser('CF_PURGE_PAGE')) {
 
             $purger = CloudFlare_Purge::create();
             $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();

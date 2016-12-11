@@ -9,7 +9,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 
     private static $allowed_actions = array(
         'purge_all',
-        'purge_css',
+        'purge_stylesheets',
         'purge_images',
         'purge_javascript',
         'purge_single',
@@ -22,11 +22,12 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     public function providePermissions()
     {
         return array(
-            "PURGE_ALL"    => "Purge All Cache",
-            "PURGE_CSS"    => "Purge CSS Cache",
-            "PURGE_JS"     => "Purge JS Cache",
-            "PURGE_PAGE"   => "Purge Page Cache",
-            "PURGE_SINGLE" => "Purge Single File Cache",
+            "CF_PURGE_ALL"         => "CloudFlare: Purge All Cache",
+            "CF_PURGE_CSS"         => "CloudFlare: Purge Stylesheet Cache",
+            "CF_PURGE_JAVASCRIPT"  => "CloudFlare: Purge Javascript Cache",
+            "CF_PURGE_STYLESHEETS" => "CloudFlare: Purge Stylesheet Cache",
+            "CF_PURGE_PAGE"        => "CloudFlare: Purge Page Cache",
+            "CF_PURGE_SINGLE"      => "CloudFlare: Purge Single File Cache",
         );
     }
 
@@ -45,6 +46,10 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_all()
     {
+        if (!Permission::check('CF_PURGE_ALL')) {
+            Security::permissionFailure();
+        }
+
         $purger = CloudFlare_Purge::create();
         $purger
             ->setPurgeEverything(true)
@@ -62,8 +67,12 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     /**
      * @return \SS_HTTPResponse|string
      */
-    public function purge_css()
+    public function purge_stylesheets()
     {
+        if (!Permission::check('CF_PURGE_STYLESHEETS')) {
+            Security::permissionFailure();
+        }
+
         CloudFlare_Purge::singleton()->quick('css');
 
         return $this->redirect($this->Link('/'));
@@ -74,6 +83,10 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_javascript()
     {
+        if (!Permission::check('CF_PURGE_JAVASCRIPT')) {
+            Security::permissionFailure();
+        }
+
         CloudFlare_Purge::singleton()->quick('javascript');
 
         return $this->redirect($this->Link('/'));
@@ -84,6 +97,10 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_images()
     {
+        if (!Permission::check('CF_PURGE_IMAGES')) {
+            Security::permissionFailure();
+        }
+
         CloudFlare_Purge::singleton()->quick('image');
 
         return $this->redirect($this->Link('/'));
@@ -94,6 +111,10 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function purge_single()
     {
+        if (!Permission::check('CF_PURGE_SINGLE')) {
+            Security::permissionFailure();
+        }
+
         if (!$urlToPurge = $this->request->postVar('url_to_purge')) {
             CloudFlare_Notifications::handleMessage(
                 _t(
@@ -101,26 +122,28 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
                     "Please provide a valid file to purge first"
                 )
             );
-        } else {
 
-            $urlToPurge = CloudFlare::singleton()->prependServerName($urlToPurge);
-
-            $purger = CloudFlare_Purge::create();
-            $purger
-                ->pushFile($urlToPurge)
-                ->setSuccessMessage(
-                    _t(
-                        "CloudFlare.SuccessPurgeProvidedFile",
-                        "The provided file(s) have been successfully purged"
-                    )
-                )
-                ->setFailureMessage(
-                    _t(
-                        "CloudFlare.FailurePurgeProvidedFile",
-                        "An error occurred while attempting to purge the provided file(s)"
-                    )
-                )->purge();
+            return $this->redirect($this->Link('/'));
         }
+
+        $urlToPurge = CloudFlare::singleton()->prependServerName($urlToPurge);
+
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->pushFile($urlToPurge)
+            ->setSuccessMessage(
+                _t(
+                    "CloudFlare.SuccessPurgeProvidedFile",
+                    "The provided file(s) have been successfully purged"
+                )
+            )
+            ->setFailureMessage(
+                _t(
+                    "CloudFlare.FailurePurgeProvidedFile",
+                    "An error occurred while attempting to purge the provided file(s)"
+                )
+            )->purge();
+
 
         return $this->redirect($this->Link('/'));
     }
@@ -132,7 +155,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getCredentialsDefined()
     {
-        return (bool) CloudFlare::singleton()->hasCFCredentials();
+        return (bool)CloudFlare::singleton()->hasCFCredentials();
     }
 
     /**
@@ -159,7 +182,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     {
         $jar = CloudFlare::singleton()->getSessionJar();
 
-        $jar['CFType'] = false;
+        $jar['CFType']    = false;
         $jar['CFMessage'] = false;
 
         CloudFlare::singleton()->setSessionJar($jar);
@@ -177,7 +200,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 
     /**
      * Produces the single url form for the admin GUI
-     * 
+     *
      * @return static
      */
     public function FormSingleUrlForm()
@@ -193,6 +216,32 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     public function ZoneID()
     {
         return CloudFlare::singleton()->fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
+    }
+
+    /**
+     * @param $code
+     *
+     * @return bool|int
+     */
+    public function HasPermission($code)
+    {
+        return Permission::check($code);
+    }
+
+    /**
+     * Determines if the current user has access to any of the GUI functionality
+     *
+     * @return bool
+     */
+    public function HasAnyAccess()
+    {
+        foreach ($this->providePermissions() as $permission => $context) {
+            if (!Permission::check($permission)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 
