@@ -1,0 +1,77 @@
+.CloudFlareAdmin {
+  .cloudflare-message {
+    margin: 15px auto 30px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  form#CloudFlareSingleUrlForm_purge-single {
+    fieldset {
+      width: 80%;
+      display: inline-block;
+
+      .field {
+        border-bottom: 0;
+        margin: 0 !important;
+        padding: 0;
+      }
+
+      + .Actions {
+        display: inline-block;
+        padding: 0 !important;
+        width: 19%;
+        position: relative;
+        left: -6px;
+
+        input[type='submit'] {
+          width: 100% !important;
+          position: relative;
+          top: -1px;
+          height: 32px;
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+
+        input[type='text'] {
+          height: 32px;
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+      }
+    }
+  }
+
+  .cloudflare-panel {
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid #ccc;
+    padding: 15px 15px;
+    border-radius: 5px;
+    margin: 15px auto;
+
+    > .cloudflare-panel-title {
+      position: relative;
+      top: -23px;
+      background: #f6f7f8;
+      display: block;
+      padding: 0 10px;
+      font-weight: bold;
+      margin-bottom: -14px;
+      width: 120px;
+      text-align: center;
+    }
+  }
+
+
+  .cf-no-zone-id {
+    color: red;
+    font-weight: bold;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+  .text-right {
+    text-align: right;
+  }
+}

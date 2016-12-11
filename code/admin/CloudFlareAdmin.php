@@ -35,7 +35,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     {
         parent::init();
 
-        Requirements::css('cloudflare/css/cloudflare.css');
+        Requirements::css('cloudflare/css/cloudflare.min.css');
     }
 
     /**
