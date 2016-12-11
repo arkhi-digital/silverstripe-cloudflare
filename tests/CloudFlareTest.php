@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class CloudFlareTest
  *
@@ -13,8 +14,6 @@ class CloudFlareTest extends SapphireTest
      */
     public function testGetServerName()
     {
-        // remove any user defined extension that updates the server name
-        // so that tests run locally in this scenario
         $this->removeExtensibleMethod('updateCloudFlareServerName');
 
         // Ensures the CI environment can be factored in
@@ -33,7 +32,8 @@ class CloudFlareTest extends SapphireTest
      *
      * @param $method
      */
-    public function removeExtensibleMethod($method) {
+    public function removeExtensibleMethod($method)
+    {
         $extensions = Object::get_extensions('CloudFlare');
         foreach ($extensions as $class) {
             $tmp = new $class();
