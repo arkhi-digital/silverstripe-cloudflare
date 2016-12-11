@@ -25,6 +25,33 @@ class CloudFlareTest extends SapphireTest
         // Apply a test extension, get a new instance of the CF class and test again to ensure the hook works
         CloudFlare::add_extension('CloudFlareTest_Extension');
         $this->assertSame('extended.dev', CloudFlare::create()->getServerName());
+        CloudFlare::remove_extension('CloudFlareTest_Extension');
+    }
+
+    /**
+     * @covers ::prependServerName
+     */
+    public function testPrependServerName() {
+        $this->removeExtensibleMethod('updateCloudFlareServerName');
+        CloudFlare::add_extension('CloudFlareTest_Extension');
+
+        $this->assertEquals(
+            CloudFlare::singleton()->prependServerName(
+                array(
+                    '/path/to/some/file.js',
+                    'path/to/some/other/file.js',
+                    'extended.dev/path/to/some/page',
+                    'http://extended.dev/path/to/some/other/page'
+                )
+            ),
+            array(
+                'http://extended.dev/path/to/some/file.js',
+                'http://extended.dev/path/to/some/other/file.js',
+                'http://extended.dev/path/to/some/page',
+                'http://extended.dev/path/to/some/other/page',
+            )
+        );
+        CloudFlare::remove_extension('CloudFlareTest_Extension');
     }
 
     /**

@@ -176,7 +176,8 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @todo Actually implement this
+     * Produces the single url form for the admin GUI
+     * 
      * @return static
      */
     public function FormSingleUrlForm()
