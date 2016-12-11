@@ -3,15 +3,16 @@
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 {
     private static $url_segment = 'cloudflare';
-    private static $url_rule = '/$Action/$ID/$OtherID';
-    private static $menu_title = 'CloudFlare';
-    private static $menu_icon = 'cloudflare/assets/cloudflare.jpg';
+    private static $url_rule    = '/$Action/$ID/$OtherID';
+    private static $menu_title  = 'CloudFlare';
+    private static $menu_icon   = 'cloudflare/assets/cloudflare.jpg';
 
     private static $allowed_actions = array(
         'purge_all',
         'purge_css',
         'purge_images',
         'purge_javascript',
+        'purge_single',
     );
 
     /**
@@ -21,10 +22,11 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     public function providePermissions()
     {
         return array(
-            "PURGE_ALL" => "Purge All Cache",
-            "PURGE_CSS" => "Purge CSS Cache",
-            "PURGE_JS" => "Purge JS Cache",
-            "PURGE_PAGE" => "Purge Page Cache",
+            "PURGE_ALL"    => "Purge All Cache",
+            "PURGE_CSS"    => "Purge CSS Cache",
+            "PURGE_JS"     => "Purge JS Cache",
+            "PURGE_PAGE"   => "Purge Page Cache",
+            "PURGE_SINGLE" => "Purge Single File Cache",
         );
     }
 
@@ -88,6 +90,42 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
+     * @return \SS_HTTPResponse|string
+     */
+    public function purge_single()
+    {
+        if (!$urlToPurge = $this->request->postVar('url_to_purge')) {
+            CloudFlare_Notifications::handleMessage(
+                _t(
+                    "CloudFlare.ProvidedFileNotFound",
+                    "Please provide a valid file to purge first"
+                )
+            );
+        } else {
+
+            $urlToPurge = CloudFlare::singleton()->prependServerName($urlToPurge);
+
+            $purger = CloudFlare_Purge::create();
+            $purger
+                ->pushFile($urlToPurge)
+                ->setSuccessMessage(
+                    _t(
+                        "CloudFlare.SuccessPurgeProvidedFile",
+                        "The provided file(s) have been successfully purged"
+                    )
+                )
+                ->setFailureMessage(
+                    _t(
+                        "CloudFlare.FailurePurgeProvidedFile",
+                        "An error occurred while attempting to purge the provided file(s)"
+                    )
+                )->purge();
+        }
+
+        return $this->redirect($this->Link('/'));
+    }
+
+    /**
      * Gets whether the required CloudFlare credentials are defined.
      *
      * @return bool
@@ -107,8 +145,8 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
         $jar = CloudFlare::singleton()->getSessionJar();
 
         $array = array(
-            "Type" => (array_key_exists('CFType', $jar)) ? $jar['CFType'] : FALSE,
-            "Message" => (array_key_exists('CFMessage', $jar)) ? $jar['CFMessage'] : FALSE,
+            "Type"    => (array_key_exists('CFType', $jar)) ? $jar['CFType'] : false,
+            "Message" => (array_key_exists('CFMessage', $jar)) ? $jar['CFMessage'] : false,
         );
 
         return ArrayData::create($array);

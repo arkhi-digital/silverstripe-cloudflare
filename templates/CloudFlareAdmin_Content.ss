@@ -20,10 +20,10 @@
                 </div>
             </div>
 
-            <%--<div class="cloudflare-panel">
+            <div class="cloudflare-panel">
                 <div class="cloudflare-panel-title"><%t CloudFlare.SingleFileLabel "Single File / URL" %></div>
                 $FormSingleUrlForm
-            </div>--%>
+            </div>
             <% end_if %>
         <% else %>
             <div class="cloudflare-message message">
