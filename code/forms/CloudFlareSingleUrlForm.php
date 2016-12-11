@@ -8,7 +8,12 @@ class CloudFlareSingleUrlForm extends Form {
         );
 
         $actions = FieldList::create(
-            FormAction::create('handlePurgeUrl', 'Purge')
+            FormAction::create('handlePurgeUrl', 
+                _t(
+                    'CloudFlare.SingleUrlPurgeButton',
+                    'Purge'
+                )
+            )
         );
 
         parent::__construct($controller, $name, $fields, $actions);
