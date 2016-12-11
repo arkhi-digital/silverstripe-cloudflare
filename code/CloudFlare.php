@@ -205,7 +205,7 @@ class CloudFlare extends Object
 
         // Allow extensions to modify or replace the server name if required
         $this->extend('updateCloudFlareServerName', $serverName);
-
+        echo ">>>>>>> " . $serverName;
         return $serverName;
     }
 
