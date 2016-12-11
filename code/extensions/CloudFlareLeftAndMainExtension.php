@@ -20,6 +20,8 @@ class CloudFlareLeftAndMainExtension extends LeftAndMainExtension
      */
     public function purgesinglepageAction($request)
     {
+        CloudFlare::singleton()->canUser('CF_PURGE_PAGE');
+        
         if (empty($request) || empty($request['ID'])) {
             return;
         }
