@@ -609,4 +609,37 @@ class CloudFlare extends Object
 
         return $headers;
     }
+
+    /**
+     * Appends server name to input
+     *
+     * @param array|string $input
+     *
+     * @return array|string
+     */
+    public function prependServerName($input)
+    {
+        $serverName = CloudFlare::singleton()->getServerName();
+
+        if (is_array($input)) {
+
+            $stack = array();
+            foreach ($input as $string) {
+                $stack[] = $this->prependServerName($string);
+            }
+
+            return $stack;
+        }
+
+
+        if (strstr($input, "http://") || strstr($input, "https://")) {
+            $input = str_replace(array("http://", "https://"), "", trim($input));
+        }
+
+        if (strstr($input, $serverName)) {
+            return "http://" . $input;
+        }
+
+        return "http://" . str_replace("//", "/", "{$serverName}/{$input}");
+    }
 }
