@@ -26,6 +26,18 @@ engines:
         enabled: false
       Naming/ShortVariable:
         enabled: false
+      UnusedPrivateField:
+        enabled: false
+      Naming/BooleanGetMethodName:
+        enabled: false
+      CleanCode/ElseExpression:
+        enabled: false
+      Controversial/CamelCasePropertyName:
+        enabled: false
+      Design/WeightedMethodCount:
+        enabled: false
+      CyclomaticComplexity:
+        enabled: false
 ratings:
   paths:
   - "**.php"
