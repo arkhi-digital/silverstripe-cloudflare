@@ -1,4 +1,11 @@
 <?php
+
+use SilverStripe\CMS\Model\SiteTreeExtension;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\FormAction;
+use SilverStripe\Security\Permission;
 /**
  * Class CloudFlareExt
  *
@@ -9,13 +16,13 @@ class CloudFlareExtension extends SiteTreeExtension
     /**
      * Extension Hook
      *
-     * @param \SiteTree $original
+     * @param SiteTree $original
      */
     public function onAfterPublish(&$original)
     {
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
-        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment) && CloudFlare::singleton()->canUser('CF_PURGE_PAGE')) {
+        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment) && Permission::check('CF_PURGE_PAGE')) {
 
             $purger = CloudFlare_Purge::create();
             $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();
@@ -97,7 +104,7 @@ class CloudFlareExtension extends SiteTreeExtension
      */
     public function onAfterUnpublish()
     {
-        if (CloudFlare::singleton()->hasCFCredentials()) {
+        if (CloudFlare::singleton()->hasCFCredentials() && Permission::check('CF_PURGE_PAGE')) {
             $purger = CloudFlare_Purge::create();
             $purger
                 ->setPurgeEverything(true)
@@ -138,7 +145,7 @@ class CloudFlareExtension extends SiteTreeExtension
      *
      * @param null|int $parentID SiteTree.ParentID
      *
-     * @return \DataList
+     * @return SilverStripe\ORM\DataList
      */
     public function getChildren($parentID = NULL)
     {
@@ -150,7 +157,7 @@ class CloudFlareExtension extends SiteTreeExtension
     /**
      * Traverses through the SiteTree hierarchy until it reaches the top level parent
      *
-     * @return \DataObject|Object
+     * @return \SilverStripe\ORM\DataObject|Object
      */
     public function getTopLevelParent() {
         $obj = $this->owner;

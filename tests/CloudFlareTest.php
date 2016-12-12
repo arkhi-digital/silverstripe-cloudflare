@@ -1,4 +1,10 @@
 <?php
+
+use SilverStripe\Dev\SapphireTest;
+use SilverStripe\Dev\TestOnly;
+use SilverStripe\Core\Object;
+use SilverStripe\Core\Extension;
+
 /**
  * Class CloudFlareTest
  *

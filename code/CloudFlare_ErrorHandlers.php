@@ -1,5 +1,7 @@
 <?php
 
+use SilverStripe\Core\Object;
+
 class CloudFlare_ErrorHandlers extends Object
 {
 

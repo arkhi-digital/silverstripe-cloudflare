@@ -1,5 +1,10 @@
 <?php
 
+use SilverStripe\Control\Controller;
+use SilverStripe\Core\Object;
+use SilverStripe\Control\Director;
+use SilverStripe\ORM\ArrayLib;
+
 class CloudFlare_Notifications extends Object
 {
 

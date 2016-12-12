@@ -1,5 +1,10 @@
 <?php
 
+use SilverStripe\Core\Object;
+use SilverStripe\Control\Director;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\ORM\DataObject;
+
 class CloudFlare_Purge extends Object
 {
 
