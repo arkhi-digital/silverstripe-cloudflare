@@ -18,5 +18,8 @@ before_script:
   - php ~/travis-support/travis_setup.php --source `pwd` --target ~/builds/ss
   - cd ~/builds/ss
 
+notifications:
+  slack: stead-lane:uy5Ik8rJbOctThnrwYm9rDzT
+
 script:
   - vendor/bin/phpunit cloudflare/tests
