@@ -14,9 +14,12 @@
       "email": "reece@steadlane.com.au"
     }
   ],
+  "support": {
+    "issues": "http://github.com/steadlane/silverstripe-cloudflare/issues"
+  },
   "require": {
     "php": ">=5.5",
-    "silverstripe/framework": "^4.*"
+    "silverstripe/framework": "^4.0"
   },
   "prefer-stable": true,
   "minimum-stability": "dev",
