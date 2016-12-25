@@ -13,3 +13,11 @@ CloudFlare:
   cache_enabled: true
   # Whether to purge related pages on publish as well
   should_purge_relations: true
+  # Blacklist specific directories from the UI purger functions. Blacklisting directories can increase response
+  # time significantly
+  purge_dir_blacklist:
+    - framework
+    - cms
+    - vendor
+    - reports
+    - siteconfig
