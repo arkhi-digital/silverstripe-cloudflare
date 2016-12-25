@@ -6,8 +6,11 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Security\Permission;
+use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\Purge;
+
 /**
- * Class CloudFlareExt
+ * Class CloudFlareExtension
  *
  * @package silverstripe-cloudflare
  */
@@ -24,8 +27,8 @@ class CloudFlareExtension extends SiteTreeExtension
         // we don't purge anything if we're operating on localhost
         if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment) && Permission::check('CF_PURGE_PAGE')) {
 
-            $purger = CloudFlare_Purge::create();
-            $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();
+            $purger = Purge::create();
+            $shouldPurgeRelations = Purge::singleton()->getShouldPurgeRelations();
             $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link(), "/"));
 
             if ($shouldPurgeRelations) {
@@ -105,7 +108,7 @@ class CloudFlareExtension extends SiteTreeExtension
     public function onAfterUnpublish()
     {
         if (CloudFlare::singleton()->hasCFCredentials() && Permission::check('CF_PURGE_PAGE')) {
-            $purger = CloudFlare_Purge::create();
+            $purger = Purge::create();
             $purger
                 ->setPurgeEverything(true)
                 ->setSuccessMessage(

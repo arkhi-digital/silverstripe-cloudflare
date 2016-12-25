@@ -6,6 +6,9 @@ use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\View\ArrayData;
 use SilverStripe\View\Requirements;
+use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\Notifications;
+use Steadlane\CloudFlare\Purge;
 
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 {
@@ -56,7 +59,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
             Security::permissionFailure();
         }
 
-        $purger = CloudFlare_Purge::create();
+        $purger = Purge::create();
         $purger
             ->setPurgeEverything(true)
             ->setSuccessMessage(
@@ -79,7 +82,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
             Security::permissionFailure();
         }
 
-        CloudFlare_Purge::singleton()->quick('css');
+        Purge::singleton()->quick('css');
 
         return $this->redirect($this->Link('/'));
     }
@@ -93,7 +96,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
             Security::permissionFailure();
         }
 
-        CloudFlare_Purge::singleton()->quick('javascript');
+        Purge::singleton()->quick('javascript');
 
         return $this->redirect($this->Link('/'));
     }
@@ -107,7 +110,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
             Security::permissionFailure();
         }
 
-        CloudFlare_Purge::singleton()->quick('image');
+        Purge::singleton()->quick('image');
 
         return $this->redirect($this->Link('/'));
     }
@@ -122,7 +125,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
         }
 
         if (!$urlToPurge = $this->request->postVar('url_to_purge')) {
-            CloudFlare_Notifications::handleMessage(
+            Notifications::handleMessage(
                 _t(
                     "CloudFlare.ProvidedFileNotFound",
                     "Please provide a valid file to purge first"
@@ -134,7 +137,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 
         $urlToPurge = CloudFlare::singleton()->prependServerName($urlToPurge);
 
-        $purger = CloudFlare_Purge::create();
+        $purger = Purge::create();
         $purger
             ->pushFile($urlToPurge)
             ->setSuccessMessage(

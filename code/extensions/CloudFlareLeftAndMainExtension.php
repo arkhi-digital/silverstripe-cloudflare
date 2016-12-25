@@ -3,6 +3,7 @@
 use SilverStripe\Admin\LeftAndMainExtension;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
+use Steadlane\CloudFlare\Purge;
 
 /**
  * Class CloudFlareLeftAndMainExtension
@@ -33,6 +34,6 @@ class CloudFlareLeftAndMainExtension extends LeftAndMainExtension
             return;
         }
 
-        CloudFlare_Purge::singleton()->quick('page', $request['ID']);
+        Purge::singleton()->quick('page', $request['ID']);
     }
 }

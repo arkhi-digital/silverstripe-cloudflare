@@ -1,11 +1,13 @@
 <?php
+namespace Steadlane\CloudFlare;
 
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Object;
 use SilverStripe\Control\Director;
 use SilverStripe\ORM\ArrayLib;
+use Steadlane\CloudFlare;
 
-class CloudFlare_Notifications extends Object
+class Notifications extends Object
 {
 
     /**

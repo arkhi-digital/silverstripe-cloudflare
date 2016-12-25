@@ -1,9 +1,11 @@
 <?php
+namespace Steadlane\CloudFlare\Tests;
 
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\Core\Object;
 use SilverStripe\Core\Extension;
+use Steadlane\CloudFlare;
 
 /**
  * Class CloudFlareTest
