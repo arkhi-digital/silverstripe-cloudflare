@@ -1,4 +1,9 @@
 <?php
+
+use SilverStripe\Admin\LeftAndMainExtension;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\Security;
+
 /**
  * Class CloudFlareLeftAndMainExtension
  *
@@ -20,7 +25,9 @@ class CloudFlareLeftAndMainExtension extends LeftAndMainExtension
      */
     public function purgesinglepageAction($request)
     {
-        CloudFlare::singleton()->canUser('CF_PURGE_PAGE');
+        if (!Permission::check('CF_PURGE_PAGE')) {
+            Security::permissionFailure();
+        }
         
         if (empty($request) || empty($request['ID'])) {
             return;

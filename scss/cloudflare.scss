@@ -1,77 +1,65 @@
 .CloudFlareAdmin {
-  .cloudflare-message {
-    margin: 15px auto 30px;
-    width: 100%;
-    max-width: 500px;
+
+  .cms-panel-padded {
+    padding: 25px;
+  }
+
+  .cloudflare-panel {
+    background: #f0f2f4;
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #cecfcf;
+    overflow: hidden;
+
+    .cloudflare-panel-title {
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .cloudflare-panel-actions {
+      a.cf-button {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #005a93;
+        color: white;
+        border-radius: 5px;
+
+        &:hover {
+          background: #177bbb;
+          text-decoration: none;
+        }
+      }
+    }
   }
 
   form#CloudFlareSingleUrlForm_purge-single {
     fieldset {
-      width: 80%;
-      display: inline-block;
+      width: calc(100% - 160px);
+      float: left;
+    }
 
-      .field {
-        border-bottom: 0;
-        margin: 0 !important;
-        padding: 0;
+    .btn-toolbar {
+      width: 160px;
+      float: right;
+      margin-bottom: 0;
+
+      input {
+        width: 100%;
+        height: 34px;
       }
+    }
 
-      + .Actions {
-        display: inline-block;
-        padding: 0 !important;
-        width: 19%;
-        position: relative;
-        left: -6px;
+    div#CloudFlareSingleUrlForm_purge-single_url_to_purge_Holder {
+      padding-bottom: 0;
+      margin-bottom: 0;
 
-        input[type='submit'] {
-          width: 100% !important;
-          position: relative;
-          top: -1px;
-          height: 32px;
-          border-top-left-radius: 0;
-          border-bottom-left-radius: 0;
-        }
-
-        input[type='text'] {
-          height: 32px;
-          border-top-right-radius: 0;
-          border-bottom-right-radius: 0;
-        }
+      &:after {
+        content: none;
       }
     }
   }
 
-  .cloudflare-panel {
-    width: 100%;
-    max-width: 500px;
-    border: 1px solid #ccc;
-    padding: 15px 15px;
-    border-radius: 5px;
-    margin: 15px auto;
-
-    > .cloudflare-panel-title {
-      position: relative;
-      top: -23px;
-      background: #f6f7f8;
-      display: block;
-      padding: 0 10px;
-      font-weight: bold;
-      margin-bottom: -14px;
-      width: 120px;
-      text-align: center;
-    }
-  }
-
-
-  .cf-no-zone-id {
-    color: red;
-    font-weight: bold;
-  }
-
-  .text-center {
+  .cms-content-actions.south {
     text-align: center;
-  }
-  .text-right {
-    text-align: right;
   }
 }

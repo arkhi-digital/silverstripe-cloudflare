@@ -1,5 +1,12 @@
 <?php
 
+use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\PermissionProvider;
+use SilverStripe\Security\Security;
+use SilverStripe\View\ArrayData;
+use SilverStripe\View\Requirements;
+
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 {
     private static $url_segment = 'cloudflare';
@@ -16,7 +23,6 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     );
 
     /**
-     * @todo Actually implement this
      * @return array
      */
     public function providePermissions()
@@ -42,7 +48,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return \SS_HTTPResponse|string
+     * @return \SilverStripe\Control\HTTPResponse|string
      */
     public function purge_all()
     {
@@ -56,7 +62,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
             ->setSuccessMessage(
                 _t(
                     "CloudFlare.PurgedEverything",
-                    "Successfully purged <strong>EVERYTHING</strong> from cache."
+                    "Successfully purged EVERYTHING from cache."
                 )
             )
             ->purge();
@@ -65,7 +71,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return \SS_HTTPResponse|string
+     * @return \SilverStripe\Control\HTTPResponse|string
      */
     public function purge_stylesheets()
     {
@@ -79,7 +85,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return \SS_HTTPResponse|string
+     * @return \SilverStripe\Control\HTTPResponse|string
      */
     public function purge_javascript()
     {
@@ -93,7 +99,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return \SS_HTTPResponse|string
+     * @return \SilverStripe\Control\HTTPResponse|string
      */
     public function purge_images()
     {
@@ -107,7 +113,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return \SS_HTTPResponse|string
+     * @return \SilverStripe\Control\HTTPResponse|string
      */
     public function purge_single()
     {
@@ -161,7 +167,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Template function to check for a response "alert" from CloudFlare functionality
      *
-     * @return ArrayData
+     * @return \SilverStripe\View\ArrayData
      */
     public function CFAlert()
     {

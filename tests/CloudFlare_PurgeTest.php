@@ -1,5 +1,6 @@
 <?php
 
+use SilverStripe\Dev\SapphireTest;
 /**
  * Class CloudFlareTest
  *

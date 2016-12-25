@@ -1,5 +1,10 @@
 <?php
 
+use SilverStripe\Forms\Form;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\TextField;
+use SilverStripe\Forms\FormAction;
+
 class CloudFlareSingleUrlForm extends Form {
     public function __construct($controller, $name)
     {
