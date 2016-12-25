@@ -357,6 +357,10 @@ class CloudFlare extends Object
     public static function getMockResponse($type, $isSuccessful) {
         $mockDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . Director::baseURL() . "cloudflare/tests/Mock/";
 
+        if (getenv('TRAVIS')) {
+            $mockDir = '/home/travis/builds/ss' . $mockDir;
+        }
+
         if (!is_dir($mockDir)) {
             user_error("The directory $mockDir needs to exist to get mock responses from the CloudFlare module", E_USER_ERROR);
         }
