@@ -183,6 +183,7 @@ class Purge extends Object
                 $this->fileSearchAux($filePath, $pattern, $files);
             }
         }
+        closedir($handle);
     }
 
 
