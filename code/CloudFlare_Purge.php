@@ -88,53 +88,70 @@ class CloudFlare_Purge extends Object
      *
      * @param string|array $extensions
      *
-     * @param null|string $dir A directory relevant to the project root, if null the entire project root will be search
+     * @param null|string $dir A directory relevant to the project root, if null the entire project root will be searched
      * @return $this
      */
     public function findFilesWithExts($extensions, $dir = null)
     {
         $files = array();
-        $rootDir = str_replace('//', '/', $_SERVER['DOCUMENT_ROOT'] . Director::baseURL() . "/" . $dir);
-
+        $rootDir = rtrim(str_replace('//', '/', $_SERVER['DOCUMENT_ROOT'] . Director::baseURL() . "/" . $dir), '/');
         if (is_array($extensions)) {
-            foreach ($extensions as $ext) {
-                $files = array_merge($this->rglob(rtrim($rootDir, "/") . "/*.{$ext}"), $files);
+            foreach($extensions as &$ext) {
+                $ext = ltrim($ext, '.');
             }
+            $extensions = implode("|", $extensions);
         }
-
+        $extensions = ltrim($extensions, '.');
+        $pattern = sprintf('/.(%s)$/i', $extensions);
         if (is_string($extensions)) {
-            $files = $this->rglob(rtrim($rootDir, "/") . "/*{$extensions}");
+            $files = $this->fileSearch($rootDir, $pattern);
         }
-
         $this->pushFile($files);
-
         return $this;
     }
-
     /**
-     * Recursive Glob Function
+     * Recursive glob-like function
      *
-     * @param     $pattern
-     * @param int $flags
+     * @param string $dir
+     * @param string $pattern Fully qualified regex pattern
      *
      * @return array
      */
-    private function rglob($pattern, $flags = 0)
+    public function fileSearch($dir, $pattern)
     {
-        $files = glob($pattern, $flags);
-        foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir) {
-            if (basename($dir) == 'framework') {
+        if (!is_dir($dir)) {
+            return false;
+        }
+        $files = array();
+        $this->fileSearchAux($dir, $pattern, $files);
+        return $files;
+    }
+    /**
+     * Auxiliary function to avoid writing temporary temporary lists on the way back
+     *
+     * @param string $dir
+     * @param string $pattern
+     * @param array $files
+     */
+    private function fileSearchAux($dir, $pattern, &$files) {
+        $handle = opendir($dir);
+        while (($file = readdir($handle)) !== false) {
+            if ($file == '.' || $file == '..') {
                 continue;
             }
-            // if we implode the array we should be able to search for all extensions at once like below
-            // http://stackoverflow.com/a/23969253/2266583 w/ GLOB_BRACE
-            // however it would always return no files for me, so i'll just leave it here for now
-            // $files = array_merge($this->rglob(rtrim($rootDir, "/") . '/*.{'.$extensions.'}'), $files);
-            ////////////////////////////////////////
-            $files = array_merge($files, $this->rglob($dir . '/' . basename($pattern), $flags));
+            $filePath = $dir == '.' ? $file : $dir . '/' . $file;
+            if (is_link($filePath)) {
+                continue;
+            }
+            if (is_file($filePath)) {
+                if (preg_match($pattern, $filePath)) {
+                    $files[] = $filePath;
+                }
+            }
+            if (is_dir($filePath) && !$this->isBlacklisted($file)) {
+                $this->fileSearchAux($filePath, $pattern, $files);
+            }
         }
-
-        return $files;
     }
 
     /**
@@ -455,6 +472,23 @@ class CloudFlare_Purge extends Object
         $this->extend('updateCloudFlarePurgeFileTypes', $types);
 
         return $types;
+    }
+
+    /**
+     * Checks to see if a certain directory is blacklisted from the fileSearch functionality
+     *
+     * @param $dir
+     *
+     * @return bool
+     */
+    public function isBlacklisted($dir) {
+        if (!is_array($blacklist = CloudFlare::config()->purge_dir_blacklist)) {
+            return false;
+        }
+        if (in_array($dir, $blacklist)) {
+            return true;
+        }
+        return false;
     }
 
     /**
