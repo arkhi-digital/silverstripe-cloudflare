@@ -1,4 +1,5 @@
 <?php
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Object;
@@ -66,7 +67,7 @@ class CloudFlare extends Object
 
         // CI support
         if (getenv('TRAVIS')) {
-            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
+            $serverName = "example.com";
         }
 
         // Remove protocols, etc
@@ -294,8 +295,8 @@ class CloudFlare extends Object
     {
         if (getenv('TRAVIS')) {
             $auth = array(
-                'email' => getenv('AUTH_EMAIL'),
-                'key' => getenv('AUTH_KEY'),
+                'email' => 'person@example.com',
+                'key' => 'MY_SECRET_AUTH_KEY',
             );
         } elseif (!$auth = $this->getCFCredentials()) {
             user_error("CloudFlare API credentials have not been provided.");
@@ -344,5 +345,31 @@ class CloudFlare extends Object
         }
 
         return "http://" . str_replace("//", "/", "{$serverName}/{$input}");
+    }
+
+    /**
+     * @param string $type         Class you want to test, this is purely based on the file naming convention
+     *                             in /tests/Mock of {$type}{$isSuccessful}.json
+     * @param bool   $isSuccessful Should the response be of successful nature or a failure?
+     *
+     * @return array
+     */
+    public static function getMockResponse($type, $isSuccessful) {
+        $mockDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . Director::baseURL() . "cloudflare/tests/Mock/";
+
+        if (!is_dir($mockDir)) {
+            user_error("The directory $mockDir needs to exist to get mock responses from the CloudFlare module", E_USER_ERROR);
+        }
+
+        $filename = ucfirst($type) . (($isSuccessful) ? "Success" : "Failure") . ".json";
+        $path = $mockDir . $filename;
+
+        $result = json_decode(file_get_contents($path), true);
+
+        if (!$result || !is_array($result)) {
+            user_error($filename . " contents must be a valid JSON string", E_USER_ERROR);
+        }
+
+        return $result;
     }
 }

@@ -1,13 +1,15 @@
 <?php
 
 use SilverStripe\Dev\SapphireTest;
+
 /**
  * Class CloudFlareTest
  *
  * @todo
  * @coversDefaultClass CloudFlare_Purge
  */
-class CloudFlare_PurgeTest extends SapphireTest {
+class CloudFlare_PurgeTest extends SapphireTest
+{
 
     /**
      * @covers ::getUrlVariants
@@ -27,11 +29,21 @@ class CloudFlare_PurgeTest extends SapphireTest {
         );
     }
 
-    public function testGetFileTypes() {
+    /**
+     * @covers ::getFileTypes()
+     */
+    public function testGetFileTypes()
+    {
         $this->assertTrue(is_array(CloudFlare_Purge::singleton()->getFileTypes()));
     }
 
-    public function testFileMethods() {
+    /**
+     * @covers ::pushFile()
+     * @covers ::getFile()
+     * @covers ::clearFiles()
+     */
+    public function testFileMethods()
+    {
         $purger = CloudFlare_Purge::create();
 
         // test string as file
@@ -79,6 +91,32 @@ class CloudFlare_PurgeTest extends SapphireTest {
 
         // assert that all files from above are cleared
         $this->assertTrue(is_null($purger->clearFiles()->getFiles()));
+    }
+
+    /**
+     * @covers ::setPurgeEverything
+     * @covers ::purge()
+     * @covers ::isSuccessful()
+     * @covers ::setTestOnly()
+     */
+    public function testPurgeEverything()
+    {
+        $purger = CloudFlare_Purge::create();
+        $purger
+            ->setPurgeEverything(true)
+            ->setTestOnly(true, true)
+            ->purge();
+
+        $this->assertTrue($purger->isSuccessful());
+
+        $purger->reset();
+
+        $purger
+            ->setPurgeEverything(true)
+            ->setTestOnly(true, false)
+            ->purge();
+
+        $this->assertFalse($purger->isSuccessful());
     }
 
 }

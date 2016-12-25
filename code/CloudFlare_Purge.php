@@ -9,15 +9,25 @@ class CloudFlare_Purge extends Object
 {
 
     /**
-     * @var
+     * @var string
      */
     protected $successMessage;
 
     /**
-     * @var
+     * @var string
      */
     protected $failureMessage;
 
+    /**
+     * @var bool
+     */
+    protected $testOnly = false;
+
+    /**
+     * @var string
+     */
+    protected $testResultSuccess;
+    
     /**
      * @var array
      */
@@ -44,7 +54,7 @@ class CloudFlare_Purge extends Object
             "js"
         ),
         'css' => array(
-            'css', 'cssmap'
+            'css', 'css.map'
         )
     );
 
@@ -231,6 +241,20 @@ class CloudFlare_Purge extends Object
     }
 
     /**
+     * @param bool $bool    If true, no request to CloudFlare will actually be made and instead you will receive a mock
+     *                      response
+     * @param bool $success True to simulate a successful request, or false to simulate a failure
+     *
+     * @return $this
+     */
+    public function setTestOnly($bool, $success) {
+        $this->testOnly = $bool;
+        $this->testResultSuccess = $success;
+
+        return $this;
+    }
+    
+    /**
      * @param $response
      *
      * @return $this
@@ -276,8 +300,11 @@ class CloudFlare_Purge extends Object
 
             return $responses;
         }
-
-
+        
+        if ($this->testOnly) {
+            return CloudFlare::getMockResponse('Purge', $this->testResultSuccess);
+        }
+        
         return CloudFlare::singleton()->curlRequest($this->getEndpoint(), $data, $method);
     }
 
@@ -473,6 +500,7 @@ class CloudFlare_Purge extends Object
      * @return bool
      */
     public function quick($what, $other_id = null) {
+        
         // create a new instance of self so we don't interrupt anything
         $purger = self::create();
         $what = trim(strtolower($what));
