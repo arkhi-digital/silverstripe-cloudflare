@@ -1,10 +1,13 @@
 <?php
+namespace Steadlane;
+
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Object;
 use SilverStripe\Control\Session;
 use SilverStripe\Core\Cache;
+use Steadlane\CloudFlare\Messages\Notifications;
 
 class CloudFlare extends Object
 {
@@ -113,7 +116,7 @@ class CloudFlare extends Object
         $serverName = $this->getServerName();
 
         if ($serverName == 'localhost') {
-            CloudFlare_Notifications::handleMessage(
+            Notifications::handleMessage(
                 _t(
                     "CloudFlare.NoLocalhost",
                     "This module does not operate under localhost." .
@@ -136,7 +139,7 @@ class CloudFlare extends Object
 
         if (!is_array($array) || !array_key_exists("result", $array) || empty($array['result'])) {
             $this->isReady(false);
-            CloudFlare_Notifications::handleMessage(
+            Notifications::handleMessage(
                 _t(
                     "CloudFlare.ZoneIdNotFound",
                     "Unable to detect a Zone ID for {server_name} under the defined CloudFlare" .
@@ -219,7 +222,7 @@ class CloudFlare extends Object
 
     /**
      * Fetch the CloudFlare configuration
-     * @return SilverStripe\Core\Config\Config_ForClass
+     * @return \SilverStripe\Core\Config\Config_ForClass
      */
     public static function config()
     {

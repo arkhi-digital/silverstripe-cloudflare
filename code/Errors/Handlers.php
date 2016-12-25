@@ -1,8 +1,10 @@
 <?php
+namespace Steadlane\CloudFlare\Errors;
 
 use SilverStripe\Core\Object;
+use Steadlane\CloudFlare;
 
-class CloudFlare_ErrorHandlers extends Object
+class HandlerMethods extends Object
 {
 
     /**

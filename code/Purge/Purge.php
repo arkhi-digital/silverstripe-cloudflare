@@ -1,11 +1,14 @@
 <?php
+namespace Steadlane\CloudFlare;
 
 use SilverStripe\Core\Object;
 use SilverStripe\Control\Director;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\DataObject;
+use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\Messages\Notifications;
 
-class CloudFlare_Purge extends Object
+class Purge extends Object
 {
 
     /**
@@ -222,7 +225,7 @@ class CloudFlare_Purge extends Object
 
         $success = $this->isSuccessful();
 
-        CloudFlare_Notifications::handleMessage(
+        Notifications::handleMessage(
             ($success) ? ($this->getSuccessMessage() ?: false) : ($this->getFailureMessage() ?: false),
             array(
                 'file_count' => $this->count()
@@ -533,7 +536,7 @@ class CloudFlare_Purge extends Object
         $purger->findFilesWithExts($fileTypes[$what]);
 
         if (!$purger->count()) {
-            CloudFlare_Notifications::handleMessage(
+            Notifications::handleMessage(
                 _t(
                     "CloudFlare.NoFilesToPurge",
                     "No {what} files were found to purge.",

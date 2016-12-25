@@ -1,6 +1,8 @@
 <?php
+namespace Steadlane\CloudFlare\Tests;
 
 use SilverStripe\Dev\SapphireTest;
+use Steadlane\CloudFlare\Purge;
 
 /**
  * Class CloudFlareTest
@@ -8,11 +10,11 @@ use SilverStripe\Dev\SapphireTest;
  * @todo
  * @coversDefaultClass CloudFlare_Purge
  */
-class CloudFlare_PurgeTest extends SapphireTest
+class PurgeTest extends SapphireTest
 {
 
     /**
-     * @covers ::getUrlVariants
+     * @covers Purge::getUrlVariants
      */
     public function testGetUrlVariants()
     {
@@ -21,7 +23,7 @@ class CloudFlare_PurgeTest extends SapphireTest
         );
 
         $this->assertEquals(
-            CloudFlare_Purge::singleton()->getUrlVariants($urls),
+            Purge::singleton()->getUrlVariants($urls),
             array(
                 'http://www.example.com',
                 'https://www.example.com'
@@ -30,21 +32,21 @@ class CloudFlare_PurgeTest extends SapphireTest
     }
 
     /**
-     * @covers ::getFileTypes()
+     * @covers Purge::getFileTypes()
      */
     public function testGetFileTypes()
     {
-        $this->assertTrue(is_array(CloudFlare_Purge::singleton()->getFileTypes()));
+        $this->assertTrue(is_array(Purge::singleton()->getFileTypes()));
     }
 
     /**
-     * @covers ::pushFile()
-     * @covers ::getFile()
-     * @covers ::clearFiles()
+     * @covers Purge::pushFile()
+     * @covers Purge::getFile()
+     * @covers Purge::clearFiles()
      */
     public function testFileMethods()
     {
-        $purger = CloudFlare_Purge::create();
+        $purger = Purge::create();
 
         // test string as file
         $purger->pushFile("somefile.ext");
@@ -94,14 +96,14 @@ class CloudFlare_PurgeTest extends SapphireTest
     }
 
     /**
-     * @covers ::setPurgeEverything
-     * @covers ::purge()
-     * @covers ::isSuccessful()
-     * @covers ::setTestOnly()
+     * @covers Purge::setPurgeEverything
+     * @covers Purge::purge()
+     * @covers Purge::isSuccessful()
+     * @covers Purge::setTestOnly()
      */
     public function testPurgeEverything()
     {
-        $purger = CloudFlare_Purge::create();
+        $purger = Purge::create();
         $purger
             ->setPurgeEverything(true)
             ->setTestOnly(true, true)
