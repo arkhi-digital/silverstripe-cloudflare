@@ -37,7 +37,7 @@ class CloudFlareTest extends SapphireTest
     public function testPrependServerName() {
         $this->removeExtensibleMethod('updateCloudFlareServerName');
         
-        CloudFlare::add_extension('Steadlane\CloudFlare\TestsCloudFlareTest_Extension');
+        CloudFlare::add_extension('Steadlane\CloudFlare\Tests\CloudFlareTest_Extension');
         $this->assertEquals(
             CloudFlare::singleton()->prependServerName(
                 array(
