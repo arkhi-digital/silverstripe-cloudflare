@@ -16,7 +16,7 @@ en:
     ZoneIdNotFound: "Unable to detect a Zone ID for {server_name} under the defined CloudFlare user. Please create a new zone under this account to use this module on this domain."
     NoFilesToPurge: "No {what} files were found to purge."
     SuccessFilesPurged: "Successfully purged {file_count} {what} files from cache."
-    PurgedEverything: "Successfully purged <strong>EVERYTHING</strong> from cache."
+    PurgedEverything: "Successfully purged EVERYTHING from cache."
     SuccessCriticalElementChanged: "A critical element has changed in this page (url, menu label, or page title) as a result; everything was purged"
     SuccessPurgeCurrentPage: "Successfully purged cache for the current page"
     FailurePurgeCurrentPage: "An error occurred while attempting to purge cache for the current page"
