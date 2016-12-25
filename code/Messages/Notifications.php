@@ -1,5 +1,5 @@
 <?php
-namespace Steadlane\CloudFlare;
+namespace Steadlane\CloudFlare\Messages;
 
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Object;

@@ -7,7 +7,7 @@ use SilverStripe\Security\Security;
 use SilverStripe\View\ArrayData;
 use SilverStripe\View\Requirements;
 use Steadlane\CloudFlare;
-use Steadlane\CloudFlare\Notifications;
+use Steadlane\CloudFlare\Messages\Notifications;
 use Steadlane\CloudFlare\Purge;
 
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider

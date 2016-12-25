@@ -26,9 +26,9 @@ class CloudFlareTest extends SapphireTest
         $this->removeExtensibleMethod('updateCloudFlareServerName');
 
         // Apply a test extension, get a new instance of the CF class and test again to ensure the hook works
-        CloudFlare::add_extension('CloudFlareTest_Extension');
+        CloudFlare::add_extension('Steadlane\CloudFlare\Tests\CloudFlareTest_Extension');
         $this->assertSame('extended.dev', CloudFlare::create()->getServerName());
-        CloudFlare::remove_extension('CloudFlareTest_Extension');
+        CloudFlare::remove_extension('Steadlane\CloudFlare\Tests\CloudFlareTest_Extension');
     }
 
     /**
@@ -36,8 +36,8 @@ class CloudFlareTest extends SapphireTest
      */
     public function testPrependServerName() {
         $this->removeExtensibleMethod('updateCloudFlareServerName');
-        CloudFlare::add_extension('CloudFlareTest_Extension');
-
+        
+        CloudFlare::add_extension('Steadlane\CloudFlare\TestsCloudFlareTest_Extension');
         $this->assertEquals(
             CloudFlare::singleton()->prependServerName(
                 array(
@@ -54,7 +54,7 @@ class CloudFlareTest extends SapphireTest
                 'http://extended.dev/path/to/some/other/page',
             )
         );
-        CloudFlare::remove_extension('CloudFlareTest_Extension');
+        CloudFlare::remove_extension('Steadlane\CloudFlare\Tests\CloudFlareTest_Extension');
     }
 
     /**
@@ -64,7 +64,7 @@ class CloudFlareTest extends SapphireTest
      * @param $method
      */
     public function removeExtensibleMethod($method) {
-        $extensions = Object::get_extensions('CloudFlare');
+        $extensions = Object::get_extensions('Steadlane\CloudFlare');
         foreach ($extensions as $class) {
             $tmp = new $class();
             if (method_exists($tmp, $method)) {

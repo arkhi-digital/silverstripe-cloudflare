@@ -7,7 +7,7 @@ use SilverStripe\Core\Convert;
 use SilverStripe\Core\Object;
 use SilverStripe\Control\Session;
 use SilverStripe\Core\Cache;
-use Steadlane\CloudFlare\Notifications;
+use Steadlane\CloudFlare\Messages\Notifications;
 
 class CloudFlare extends Object
 {
