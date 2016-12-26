@@ -2,7 +2,7 @@
 namespace Steadlane\CloudFlare\Errors;
 
 use SilverStripe\Core\Object;
-use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\CloudFlare;
 
 class HandlerMethods extends Object
 {

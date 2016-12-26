@@ -5,7 +5,7 @@ use SilverStripe\Control\Controller;
 use SilverStripe\Core\Object;
 use SilverStripe\Control\Director;
 use SilverStripe\ORM\ArrayLib;
-use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\CloudFlare;
 
 class Notifications extends Object
 {

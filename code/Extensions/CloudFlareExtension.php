@@ -6,7 +6,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Security\Permission;
-use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\CloudFlare;
 use Steadlane\CloudFlare\Purge;
 
 /**
