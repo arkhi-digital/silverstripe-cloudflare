@@ -5,7 +5,7 @@ use SilverStripe\Core\Object;
 use SilverStripe\Control\Director;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\DataObject;
-use Steadlane\CloudFlare;
+use Steadlane\CloudFlare\CloudFlare;
 use Steadlane\CloudFlare\Messages\Notifications;
 
 class Purge extends Object

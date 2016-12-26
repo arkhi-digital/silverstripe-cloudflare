@@ -1,5 +1,5 @@
 <?php
-namespace Steadlane;
+namespace Steadlane\CloudFlare;
 
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Config;
