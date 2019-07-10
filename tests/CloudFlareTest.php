@@ -34,7 +34,7 @@ class CloudFlareTest extends SapphireTest
      * @param $method
      */
     public function removeExtensibleMethod($method) {
-        $extensions = Object::get_extensions('CloudFlare');
+        $extensions = SS_Object::get_extensions('CloudFlare');
         foreach ($extensions as $class) {
             $tmp = new $class();
             if (method_exists($tmp, $method)) {

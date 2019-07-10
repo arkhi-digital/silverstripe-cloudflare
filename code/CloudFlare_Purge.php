@@ -1,6 +1,6 @@
 <?php
 
-class CloudFlare_Purge extends Object
+class CloudFlare_Purge extends SS_Object
 {
 
     /**
