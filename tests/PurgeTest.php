@@ -1,14 +1,14 @@
 <?php
-namespace Steadlane\CloudFlare\Tests;
+
+namespace SteadLane\Cloudflare\Tests;
 
 use SilverStripe\Dev\SapphireTest;
 use Steadlane\CloudFlare\Purge;
 
 /**
- * Class CloudFlareTest
+ * Class PurgeTest
  *
- * @todo
- * @coversDefaultClass CloudFlare_Purge
+ * @coversDefaultClass Purge
  */
 class PurgeTest extends SapphireTest
 {
@@ -41,7 +41,7 @@ class PurgeTest extends SapphireTest
 
     /**
      * @covers Purge::pushFile()
-     * @covers Purge::getFile()
+     * @covers Purge::getFiles()
      * @covers Purge::clearFiles()
      */
     public function testFileMethods()
