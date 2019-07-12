@@ -1,6 +1,6 @@
 <?php
 
-class CloudFlare_ErrorHandlers extends Object
+class CloudFlare_ErrorHandlers extends SS_Object
 {
 
     /**

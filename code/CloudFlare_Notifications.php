@@ -1,6 +1,6 @@
 <?php
 
-class CloudFlare_Notifications extends Object
+class CloudFlare_Notifications extends SS_Object
 {
 
     /**

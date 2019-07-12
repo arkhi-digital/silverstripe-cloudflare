@@ -1,6 +1,6 @@
 <?php
 
-class CloudFlare extends Object
+class CloudFlare extends SS_Object
 {
     /**
      * @var string
@@ -445,7 +445,7 @@ class CloudFlare extends Object
     {
         Deprecation::notice('2.0', 'This method has been moved to CloudFlare_Purge');
         $purger = CloudFlare_Purge::create();
-        
+
         return $purger->setResponse($response)->isSuccessful();
     }
 
