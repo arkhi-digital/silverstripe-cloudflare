@@ -1,11 +1,8 @@
 ---
 Name: cloudflare
-After:
-  - 'framework/*'
-  - 'cms/*'
 ---
 
-CloudFlare:
+SteadLane\Cloudflare\CloudFlare:
   log_errors: true
   # Number of seconds before the cURL request execution will time out.
   curl_timeout: 20
@@ -16,9 +13,6 @@ CloudFlare:
   # Blacklist specific directories from the UI purger functions. Blacklisting directories can increase response
   # time significantly
   purge_dir_blacklist:
-    - framework
-    - cms
     - vendor
-    - reports
-    - siteconfig
-    - asset-admin
+    - resources
+    - _resources

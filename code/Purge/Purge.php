@@ -1,15 +1,22 @@
 <?php
-namespace Steadlane\CloudFlare;
 
-use SilverStripe\Core\Object;
+namespace SteadLane\Cloudflare;
+
+use SilverStripe\Core\Extensible;
+use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Control\Director;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\DataObject;
-use Steadlane\CloudFlare\CloudFlare;
-use Steadlane\CloudFlare\Messages\Notifications;
+use SteadLane\Cloudflare\Messages\Notifications;
 
-class Purge extends Object
+/**
+ * Class Purge
+ * @package SteadLane\Cloudflare
+ */
+class Purge
 {
+    use Injectable;
+    use Extensible;
 
     /**
      * @var string
@@ -79,7 +86,7 @@ class Purge extends Object
     }
 
     /**
-     * @param string $file
+     * @param string|array $file
      * @return $this
      */
     public function pushFile($file)
@@ -105,7 +112,6 @@ class Purge extends Object
      * Recursively find files with a specific extension(s) starting at the document root
      *
      * @param string|array $extensions
-     *
      * @param null|string $dir A directory relevant to the project root, if null the entire project root will be searched
      * @return $this
      */
@@ -138,8 +144,7 @@ class Purge extends Object
      *
      * @param string $dir
      * @param string $pattern Fully qualified regex pattern
-     *
-     * @return array
+     * @return array|bool
      */
     public function fileSearch($dir, $pattern)
     {
@@ -192,7 +197,6 @@ class Purge extends Object
      * an "already absolute" url.
      *
      * @param string|array $files
-     *
      * @return string|array|bool Dependent on input, returns false if input is neither an array, or a string.
      */
     public function convertToAbsolute($files)
@@ -553,15 +557,15 @@ class Purge extends Object
      *
      * @return bool
      */
-    public function quick($what, $other_id = null) {
-
+    public function quick($what, $other_id = null)
+    {
         // create a new instance of self so we don't interrupt anything
         $purger = self::create();
         $what = trim(strtolower($what));
 
         if ($what == 'page' && isset($other_id)) {
             if (!($other_id instanceof SiteTree)) {
-                $other_id = DataObject::get_by_id('SiteTree', $other_id);
+                $other_id = DataObject::get_by_id(SiteTree::class, $other_id);
             }
             $page = $other_id;
 

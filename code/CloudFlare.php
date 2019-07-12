@@ -1,16 +1,29 @@
 <?php
-namespace Steadlane\CloudFlare;
 
+namespace SteadLane\Cloudflare;
+
+use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Control\Director;
-use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Convert;
-use SilverStripe\Core\Object;
 use SilverStripe\Control\Session;
-use SilverStripe\Core\Cache;
-use Steadlane\CloudFlare\Messages\Notifications;
+use SilverStripe\Core\Environment;
+use SilverStripe\Core\Extensible;
+use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\GraphQL\Controller;
+use SteadLane\Cloudflare\Messages\Notifications;
 
-class CloudFlare extends Object
+/**
+ * Class CloudFlare
+ * @package SteadLane\Cloudflare
+ */
+class CloudFlare
 {
+    use Configurable;
+    use Injectable;
+    use Extensible;
+
     /**
      * @var string
      */
@@ -25,13 +38,13 @@ class CloudFlare extends Object
     protected static $ready = false;
 
     /**
-     * Ensures that CloudFlare authentication credentials are defined as constants
+     * Ensures that Cloudflare authentication credentials are defined as constants
      *
      * @return bool
      */
     public function hasCFCredentials()
     {
-        if (!getenv('TRAVIS') && (!defined('CLOUDFLARE_AUTH_EMAIL') || !defined('CLOUDFLARE_AUTH_KEY'))) {
+        if (!getenv('TRAVIS') && (!defined('CLOUDFLARE_AUTH_EMAIL') || !defined('CLOUDFLARE_AUTH_KEY')) && (!Environment::getEnv('CLOUDFLARE_AUTH_EMAIL') || !Environment::getEnv('CLOUDFLARE_AUTH_KEY'))) {
             return false;
         }
 
@@ -39,24 +52,31 @@ class CloudFlare extends Object
     }
 
     /**
-     * Fetches CloudFlare Credentials from YML configuration
+     * Fetches Cloudflare Credentials from YML configuration
      *
      * @return array|bool
      */
     public function getCFCredentials()
     {
         if ($this->hasCFCredentials()) {
-            return array(
-                'email' => CLOUDFLARE_AUTH_EMAIL,
-                'key'   => CLOUDFLARE_AUTH_KEY
-            );
+            if (Environment::getEnv('CLOUDFLARE_AUTH_EMAIL')) {
+                return array(
+                    'email' => Environment::getEnv('CLOUDFLARE_AUTH_EMAIL'),
+                    'key'   => Environment::getEnv('CLOUDFLARE_AUTH_KEY')
+                );
+            } else {
+                return array(
+                    'email' => CLOUDFLARE_AUTH_EMAIL,
+                    'key'   => CLOUDFLARE_AUTH_KEY
+                );
+            }
         }
 
         return false;
     }
 
     /**
-     * Gathers the current server name, which will be used as the CloudFlare zone ID
+     * Gathers the current server name, which will be used as the Cloudflare zone ID
      *
      * @return string
      */
@@ -70,7 +90,7 @@ class CloudFlare extends Object
 
         // CI support
         if (getenv('TRAVIS')) {
-            $serverName = "example.com";
+            $serverName = getenv('CLOUDFLARE_DUMMY_SITE');
         }
 
         // Remove protocols, etc
@@ -88,12 +108,12 @@ class CloudFlare extends Object
     }
 
     /**
-     * Returns whether caching is enabled for the CloudFlare class instance
+     * Returns whether caching is enabled for the Cloudflare class instance
      * @return bool
      */
     public function getCacheEnabled()
     {
-        return (bool)self::config()->cache_enabled === true;
+        return (bool)self::config()->get('cache_enabled') === true;
     }
 
     /**
@@ -104,8 +124,7 @@ class CloudFlare extends Object
     public function fetchZoneID()
     {
         if ($this->getCacheEnabled()) {
-            $factory = Cache::factory("CloudFlare");
-
+            $factory = Injector::inst()->get(CacheInterface::class . '.CloudflareCache');
             if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
                 $this->isReady(true);
 
@@ -119,10 +138,10 @@ class CloudFlare extends Object
             Notifications::handleMessage(
                 _t(
                     "CloudFlare.NoLocalhost",
-                    "This module does not operate under localhost." .
+                    "This module does not operate under <strong>localhost</strong>." .
                     "Please ensure your website has a resolvable DNS and access the website via the domain."
                 ),
-                "error"
+                ["type"=>"error"]
             );
 
             return false;
@@ -142,14 +161,14 @@ class CloudFlare extends Object
             Notifications::handleMessage(
                 _t(
                     "CloudFlare.ZoneIdNotFound",
-                    "Unable to detect a Zone ID for {server_name} under the defined CloudFlare" .
-                    " user. Please create a new zone under this account to use this module on this domain.",
+                    "Unable to detect a Zone ID for <strong>{server_name}</strong> under the defined Cloudflare" .
+                    " user.<br/><br/>Please create a new zone under this account to use this module on this domain.",
                     "",
                     array(
                         "server_name" => $serverName
                     )
                 ),
-                "error"
+                ["type"=>"error"]
             );
 
             return false;
@@ -158,7 +177,7 @@ class CloudFlare extends Object
         $zoneID = $array['result'][0]['id'];
 
         if ($this->getCacheEnabled() && isset($factory)) {
-            $factory->save($zoneID, self::CF_ZONE_ID_CACHE_KEY);
+            $factory->set($zoneID, self::CF_ZONE_ID_CACHE_KEY);
         }
 
         $this->isReady(true);
@@ -175,14 +194,12 @@ class CloudFlare extends Object
      */
     public function isReady($state = null)
     {
-        if ($state) {
+        if ($state!==null) {
             self::$ready = (bool)$state;
-
             return $state;
         }
 
         $this->fetchZoneID();
-
         return self::$ready;
     }
 
@@ -193,20 +210,22 @@ class CloudFlare extends Object
      */
     public function getSessionJar()
     {
-        $session = Session::get('slCloudFlare') ?: (Session::set('slCloudFlare', array())) ?: Session::get('slCloudFlare');
-
+        $session = Controller::curr()->getRequest()->getSession()->get('slCloudFlare');
+        if (!$session) {
+            $session=array();
+            Controller::curr()->getRequest()->getSession()->set('slCloudFlare',$session);
+        }
         return $session;
     }
 
     /**
-     * @param $data
+     * @param array|mixed $data
      *
      * @return $this
      */
     public function setSessionJar($data)
     {
-        Session::set('slCloudFlare', $data);
-
+        Controller::curr()->getRequest()->getSession()->set('slCloudFlare', $data);
         return $this;
     }
 
@@ -217,23 +236,23 @@ class CloudFlare extends Object
      */
     public function getCurlTimeout()
     {
-        return (int)self::config()->curl_timeout;
+        return (int)self::config()->get('curl_timeout');
     }
 
-    /**
-     * Fetch the CloudFlare configuration
-     * @return \SilverStripe\Core\Config\Config_ForClass
-     */
-    public static function config()
-    {
-        return Config::inst()->forClass('CloudFlare');
-    }
+    ///**
+    // * Fetch the Cloudflare configuration
+    // * @return \SilverStripe\Core\Config\Config_ForClass
+    // */
+    //public static function config()
+    //{
+    //    return Config::inst()->forClass('CloudFlare');
+    //}
 
     /**
      * Sends our cURL requests with our custom auth headers
      *
      * @param string $url    The URL
-     * @param null   $data   Optional array of data to send
+     * @param null|string|array $data   Optional array of data to send
      * @param string $method GET, PUT, POST, DELETE etc
      *
      * @return string JSON
@@ -269,7 +288,7 @@ class CloudFlare extends Object
 
         // Handle any errors
         if (false === $result) {
-            user_error(sprintf("Error connecting to CloudFlare:\n%s", curl_error($curl)), E_USER_ERROR);
+            user_error(sprintf("Error connecting to Cloudflare:\n%s", curl_error($curl)), E_USER_ERROR);
         }
         curl_close($curl);
 
@@ -298,11 +317,11 @@ class CloudFlare extends Object
     {
         if (getenv('TRAVIS')) {
             $auth = array(
-                'email' => 'person@example.com',
-                'key' => 'MY_SECRET_AUTH_KEY',
+                'email' => getenv('AUTH_EMAIL'),
+                'key' => getenv('AUTH_KEY'),
             );
         } elseif (!$auth = $this->getCFCredentials()) {
-            user_error("CloudFlare API credentials have not been provided.");
+            user_error("Cloudflare API credentials have not been provided.");
             exit;
         }
 
@@ -350,6 +369,11 @@ class CloudFlare extends Object
         return "http://" . str_replace("//", "/", "{$serverName}/{$input}");
     }
 
+    public function canUser($member)
+    {
+        return true;
+    }
+
     /**
      * @param string $type         Class you want to test, this is purely based on the file naming convention
      *                             in /tests/Mock of {$type}{$isSuccessful}.json
@@ -365,7 +389,7 @@ class CloudFlare extends Object
         }
 
         if (!is_dir($mockDir)) {
-            user_error("The directory $mockDir needs to exist to get mock responses from the CloudFlare module", E_USER_ERROR);
+            user_error("The directory $mockDir needs to exist to get mock responses from the Cloudflare module", E_USER_ERROR);
         }
 
         $filename = ucfirst($type) . (($isSuccessful) ? "Success" : "Failure") . ".json";

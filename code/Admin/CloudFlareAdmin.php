@@ -1,21 +1,26 @@
 <?php
 
+namespace SteadLane\Cloudflare;
+
 use SilverStripe\Admin\LeftAndMain;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\View\ArrayData;
 use SilverStripe\View\Requirements;
-use Steadlane\CloudFlare\CloudFlare;
 use Steadlane\CloudFlare\Messages\Notifications;
-use Steadlane\CloudFlare\Purge;
 
+/**
+ * Class CloudFlareAdmin
+ * @package SteadLane\Cloudflare
+ */
 class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
 {
     private static $url_segment = 'cloudflare';
     private static $url_rule    = '/$Action/$ID/$OtherID';
-    private static $menu_title  = 'CloudFlare';
-    private static $menu_icon   = 'cloudflare/assets/cloudflare.jpg';
+    private static $menu_title  = 'Cloudflare';
+    private static $menu_icon_class = 'font-icon-upload';
+    private static $menu_priority = -9;
 
     private static $allowed_actions = array(
         'purge_all',
@@ -31,12 +36,36 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     public function providePermissions()
     {
         return array(
-            "CF_PURGE_ALL"         => "CloudFlare: Purge All Cache",
-            "CF_PURGE_CSS"         => "CloudFlare: Purge Stylesheet Cache",
-            "CF_PURGE_JAVASCRIPT"  => "CloudFlare: Purge Javascript Cache",
-            "CF_PURGE_STYLESHEETS" => "CloudFlare: Purge Stylesheet Cache",
-            "CF_PURGE_PAGE"        => "CloudFlare: Purge Page Cache",
-            "CF_PURGE_SINGLE"      => "CloudFlare: Purge Single File Cache",
+            "CF_PURGE_ALL" => array(
+                'name' => "Cloudflare: Purge All Cache",
+                'category' => _t('SilverStripe\\Security\\Permission.CONTENT_CATEGORY', 'Content permissions'),
+                //'help' => '',
+            ),
+            "CF_PURGE_CSS" => array(
+                'name' => "Cloudflare: Purge Stylesheet Cache",
+                'category' => _t('SilverStripe\\Security\\Permission.CONTENT_CATEGORY', 'Content permissions'),
+                //'help' => '',
+            ),
+            "CF_PURGE_JAVASCRIPT" => array(
+                'name' => "Cloudflare: Purge Javascript Cache",
+                'category' => _t('SilverStripe\\Security\\Permission.CONTENT_CATEGORY', 'Content permissions'),
+                //'help' => '',
+            ),
+            "CF_PURGE_STYLESHEETS" => array(
+                'name' => "Cloudflare: Purge Stylesheet Cache",
+                'category' => _t('SilverStripe\\Security\\Permission.CONTENT_CATEGORY', 'Content permissions'),
+                //'help' => '',
+            ),
+            "CF_PURGE_PAGE" => array(
+                'name' => "Cloudflare: Purge Page Cache",
+                'category' => _t('SilverStripe\\Security\\Permission.CONTENT_CATEGORY', 'Content permissions'),
+                //'help' => '',
+            ),
+            "CF_PURGE_SINGLE" => array(
+                'name' => "Cloudflare: Purge Single File Cache",
+                'category' => _t('SilverStripe\\Security\\Permission.CONTENT_CATEGORY', 'Content permissions'),
+                //'help' => '',
+            ),
         );
     }
 
@@ -47,7 +76,11 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     {
         parent::init();
 
-        Requirements::css('cloudflare/css/cloudflare.min.css');
+        //Requirements::css('cloudflare/css/cloudflare.min.css');
+        $css=@file_get_contents(dirname(__FILE__).'/../../css/cloudflare.min.css');
+        if (!empty($css)) {
+            Requirements::customCSS($css);
+        }
     }
 
     /**
@@ -124,7 +157,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
             Security::permissionFailure();
         }
 
-        if (!$urlToPurge = $this->request->postVar('url_to_purge')) {
+        if (!($urlToPurge = $this->request->postVar('url_to_purge'))) {
             Notifications::handleMessage(
                 _t(
                     "CloudFlare.ProvidedFileNotFound",
@@ -158,7 +191,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * Gets whether the required CloudFlare credentials are defined.
+     * Gets whether the required Cloudflare credentials are defined.
      *
      * @return bool
      */
@@ -168,7 +201,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * Template function to check for a response "alert" from CloudFlare functionality
+     * Template function to check for a response "alert" from Cloudflare functionality
      *
      * @return \SilverStripe\View\ArrayData
      */
@@ -198,7 +231,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * Template function to determine if CloudFlare is ready (ergo has a zone ID)
+     * Template function to determine if Cloudflare is ready (ergo has a zone ID)
      *
      * @return bool|null
      */
@@ -210,7 +243,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Produces the single url form for the admin GUI
      *
-     * @return static
+     * @return CloudFlareSingleUrlForm
      */
     public function FormSingleUrlForm()
     {
@@ -224,7 +257,7 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
      */
     public function ZoneID()
     {
-        return CloudFlare::singleton()->fetchZoneID() ?: "<strong class='cf-no-zone-id'>UNABLE TO DETECT</strong>";
+        return (CloudFlare::singleton()->fetchZoneID() ?: _t("CloudFlare.UnableToDetect", "UNABLE TO DETECT"));
     }
 
     /**
@@ -249,9 +282,6 @@ class CloudFlareAdmin extends LeftAndMain implements PermissionProvider
                 return false;
             }
         }
-
         return true;
     }
-
-
 }

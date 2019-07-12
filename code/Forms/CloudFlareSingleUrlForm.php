@@ -1,11 +1,24 @@
 <?php
 
+namespace SteadLane\Cloudflare;
+
+use SilverStripe\Control\RequestHandler;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\FormAction;
 
-class CloudFlareSingleUrlForm extends Form {
+/**
+ * Class CloudFlareSingleUrlForm
+ * @package SteadLane\Cloudflare
+ */
+class CloudFlareSingleUrlForm extends Form
+{
+    /**
+     * CloudFlareSingleUrlForm constructor.
+     * @param RequestHandler $controller
+     * @param string $name
+     */
     public function __construct($controller, $name)
     {
         $fields = FieldList::create(

@@ -1,0 +1,8 @@
+---
+Name: cloudflarecache
+---
+SilverStripe\Core\Injector\Injector:
+  Psr\SimpleCache\CacheInterface.CloudflareCache:
+    factory: SilverStripe\Core\Cache\CacheFactory
+    constructor:
+      namespace: 'cloudflarecache'

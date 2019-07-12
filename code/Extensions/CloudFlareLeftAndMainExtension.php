@@ -1,13 +1,13 @@
 <?php
 
+namespace SteadLane\Cloudflare;
+
 use SilverStripe\Admin\LeftAndMainExtension;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
-use Steadlane\CloudFlare\Purge;
 
 /**
  * Class CloudFlareLeftAndMainExtension
- *
  * @package silverstripe-cloudflare
  */
 class CloudFlareLeftAndMainExtension extends LeftAndMainExtension

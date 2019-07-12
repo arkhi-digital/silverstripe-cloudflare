@@ -1,17 +1,17 @@
 <?php
 
+namespace SteadLane\Cloudflare;
+
 use SilverStripe\CMS\Model\SiteTreeExtension;
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Security\Permission;
-use Steadlane\CloudFlare\CloudFlare;
-use Steadlane\CloudFlare\Purge;
 
 /**
  * Class CloudFlareExtension
- *
  * @package silverstripe-cloudflare
  */
 class CloudFlareExtension extends SiteTreeExtension
@@ -25,11 +25,11 @@ class CloudFlareExtension extends SiteTreeExtension
     {
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
-        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment) && Permission::check('CF_PURGE_PAGE')) {
+        if (CloudFlare::singleton()->hasCFCredentials() && $original && strlen($original->URLSegment) && Permission::check('CF_PURGE_PAGE')) {
 
             $purger = Purge::create();
             $shouldPurgeRelations = Purge::singleton()->getShouldPurgeRelations();
-            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link(), "/"));
+            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id(SiteTree::class, $this->owner->ID)->Link(), "/"));
 
             if ($shouldPurgeRelations) {
                 $top = $this->getTopLevelParent();
@@ -148,7 +148,7 @@ class CloudFlareExtension extends SiteTreeExtension
      *
      * @param null|int $parentID SiteTree.ParentID
      *
-     * @return SilverStripe\ORM\DataList
+     * @return DataList
      */
     public function getChildren($parentID = NULL)
     {
@@ -160,9 +160,10 @@ class CloudFlareExtension extends SiteTreeExtension
     /**
      * Traverses through the SiteTree hierarchy until it reaches the top level parent
      *
-     * @return \SilverStripe\ORM\DataObject|Object
+     * @return DataObject|Object
      */
-    public function getTopLevelParent() {
+    public function getTopLevelParent()
+    {
         $obj = $this->owner;
 
         while ((int)$obj->ParentID) {
@@ -175,10 +176,11 @@ class CloudFlareExtension extends SiteTreeExtension
     /**
      * Recursively fetches all children of the given page ID
      *
-     * @param null $parentID SiteTree.ParentID
-     * @param      $output
+     * @param null|int $parentID
+     * @param array $output
      */
-    public function getChildrenRecursive($parentID = NULL, &$output) {
+    public function getChildrenRecursive($parentID, &$output)
+    {
         $id = (is_null($parentID)) ? $this->owner->ID : $parentID;
 
         if (!is_array($output)) { $output = array(); }
@@ -190,7 +192,7 @@ class CloudFlareExtension extends SiteTreeExtension
                 $this->getChildrenRecursive($child->ID, $output);
             }
 
-            $output[] = ltrim(DataObject::get_by_id('SiteTree', $child->ID)->Link(), "/");
+            $output[] = ltrim(DataObject::get_by_id(SiteTree::class, $child->ID)->Link(), "/");
         }
     }
 
@@ -211,9 +213,9 @@ class CloudFlareExtension extends SiteTreeExtension
             FormAction::create('purgesinglepageAction', 
                 _t(
                     'CloudFlare.ActionMenuPurge',
-                    'Purge in CloudFlare'
+                    'Purge in Cloudflare'
                 )
-            )
+            )->addExtraClass('btn-secondary')
         );
     }
 }

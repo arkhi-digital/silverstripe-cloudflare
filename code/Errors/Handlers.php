@@ -1,28 +1,41 @@
 <?php
-namespace Steadlane\CloudFlare\Errors;
 
-use SilverStripe\Core\Object;
-use Steadlane\CloudFlare\CloudFlare;
+namespace SteadLane\Cloudflare\Errors;
 
-class HandlerMethods extends Object
+use SilverStripe\Core\Injector\Injectable;
+use SteadLane\Cloudflare\CloudFlare;
+
+/**
+ * Class HandlerMethods
+ * @package SteadLane\Cloudflare\Errors
+ */
+class HandlerMethods
 {
+    use Injectable;
 
     /**
      * Generic Error
      *
-     * @param $response
+     * @param array|string $response
      */
     public static function generic($response)
     {
         self::log(print_r($response));
     }
 
+    /**
+     * @param array|string $response
+     */
     public static function malformed($response)
     {
         self::log(sprintf("The API response was malformed:\r\n%s", print_r($response, true)));
     }
 
-    public static function log($message, $force = null)
+    /**
+     * @param string $message
+     * @param bool $force
+     */
+    public static function log($message, $force = false)
     {
         if (!$force || !CloudFlare::config()->log_errors) {
             return;
@@ -30,10 +43,9 @@ class HandlerMethods extends Object
 
         error_log(
             sprintf(
-                "CloudFlare Module Reported An Error:\r\n%s",
+                "Cloudflare module reported an error:\r\n%s",
                 $message
             )
         );
     }
-
 }

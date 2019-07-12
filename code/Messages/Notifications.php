@@ -1,14 +1,24 @@
 <?php
-namespace Steadlane\CloudFlare\Messages;
+
+namespace SteadLane\Cloudflare\Messages;
 
 use SilverStripe\Control\Controller;
-use SilverStripe\Core\Object;
+use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Extensible;
+use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Control\Director;
 use SilverStripe\ORM\ArrayLib;
 use Steadlane\CloudFlare\CloudFlare;
 
-class Notifications extends Object
+/**
+ * Class Notifications
+ * @package SteadLane\Cloudflare\Messages
+ */
+class Notifications
 {
+    use Configurable;
+    use Injectable;
+    use Extensible;
 
     /**
      * Sets the X-Status header which creates the toast-like popout notification
@@ -17,7 +27,7 @@ class Notifications extends Object
      */
     protected static function setToast($message)
     {
-        Controller::curr()->response->addHeader('X-Status', rawurlencode('CloudFlare: ' . $message));
+        Controller::curr()->getResponse()->addHeader('X-Status', rawurlencode('Cloudflare: ' . $message));
     }
 
     /**
@@ -28,6 +38,7 @@ class Notifications extends Object
      */
     protected static function setAlert($message, $type = 'success')
     {
+        if (!$type || empty($type)){ $type='success'; }
         $jar = CloudFlare::singleton()->getSessionJar();
 
         $jar['CFMessage'] = $message;
@@ -62,7 +73,7 @@ class Notifications extends Object
         if (Director::is_ajax()) {
             static::setToast($message);
         } else {
-            static::setAlert($message);
+            static::setAlert($message, ($params && isset($params['type'])?$params['type']:null));
         }
     }
 
