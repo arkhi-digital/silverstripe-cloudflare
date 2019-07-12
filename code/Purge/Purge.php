@@ -166,29 +166,31 @@ class Purge
      */
     private function fileSearchAux($dir, $pattern, &$files) {
         $handle = opendir($dir);
-        while (($file = readdir($handle)) !== false) {
+        if ($handle) {
+            while (($file = readdir($handle)) !== false) {
 
-            if ($file == '.' || $file == '..') {
-                continue;
-            }
+                if ($file == '.' || $file == '..') {
+                    continue;
+                }
 
-            $filePath = $dir == '.' ? $file : $dir . '/' . $file;
+                $filePath = $dir == '.' ? $file : $dir . '/' . $file;
 
-            if (is_link($filePath)) {
-                continue;
-            }
+                if (is_link($filePath)) {
+                    continue;
+                }
 
-            if (is_file($filePath)) {
-                if (preg_match($pattern, $filePath)) {
-                    $files[] = $filePath;
+                if (is_file($filePath)) {
+                    if (preg_match($pattern, $filePath)) {
+                        $files[] = $filePath;
+                    }
+                }
+
+                if (is_dir($filePath) && !$this->isBlacklisted($file)) {
+                    $this->fileSearchAux($filePath, $pattern, $files);
                 }
             }
-
-            if (is_dir($filePath) && !$this->isBlacklisted($file)) {
-                $this->fileSearchAux($filePath, $pattern, $files);
-            }
+            closedir($handle);
         }
-        closedir($handle);
     }
 
 

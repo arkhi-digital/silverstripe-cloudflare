@@ -29,7 +29,15 @@ class CloudFlareExtension extends SiteTreeExtension
 
             $purger = Purge::create();
             $shouldPurgeRelations = Purge::singleton()->getShouldPurgeRelations();
-            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id(SiteTree::class, $this->owner->ID)->Link(), "/"));
+
+            $pageUrl=ltrim(DataObject::get_by_id(SiteTree::class, $this->owner->ID)->Link(), "/");
+            if ($pageUrl!='/' && substr($pageUrl,-1)=='/') {
+                $pageUrl=substr($pageUrl,0,strlen($pageUrl)-1); // add first URL without trailing slash
+            }
+            $urls = array($_SERVER['DOCUMENT_ROOT'].$pageUrl);
+            if ($pageUrl!='/') {
+                array_push($urls, $_SERVER['DOCUMENT_ROOT'].$pageUrl.'/'); // add second URL with trailing slash
+            }
 
             if ($shouldPurgeRelations) {
                 $top = $this->getTopLevelParent();
@@ -59,6 +67,10 @@ class CloudFlareExtension extends SiteTreeExtension
                 }
             }
 
+            if (count($urls)===1 && empty($urls[0])) {
+                $urls=array();
+            }
+
             if (count($urls) === 1) {
                 $purger
                     ->reset()
@@ -76,9 +88,7 @@ class CloudFlareExtension extends SiteTreeExtension
                     )
                     ->pushFile($urls[0])
                     ->purge();
-            }
-
-            if (count($urls) > 1) {
+            } else if (count($urls) > 1) {
                 $purger
                     ->reset()
                     ->setSuccessMessage(
