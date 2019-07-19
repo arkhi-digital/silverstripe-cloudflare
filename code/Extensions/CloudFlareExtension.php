@@ -9,6 +9,7 @@ use SilverStripe\Security\Permission;
 use Steadlane\CloudFlare\CloudFlare;
 use Steadlane\CloudFlare\Purge;
 
+
 /**
  * Class CloudFlareExtension
  *
@@ -29,7 +30,7 @@ class CloudFlareExtension extends SiteTreeExtension
 
             $purger = Purge::create();
             $shouldPurgeRelations = Purge::singleton()->getShouldPurgeRelations();
-            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link(), "/"));
+            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id(SiteTree::class, $this->owner->ID)->Link(), "/"));
 
             if ($shouldPurgeRelations) {
                 $top = $this->getTopLevelParent();
@@ -98,7 +99,7 @@ class CloudFlareExtension extends SiteTreeExtension
             }
 
         }
-        
+
         parent::onAfterPublish($original);
     }
 
@@ -190,7 +191,7 @@ class CloudFlareExtension extends SiteTreeExtension
                 $this->getChildrenRecursive($child->ID, $output);
             }
 
-            $output[] = ltrim(DataObject::get_by_id('SiteTree', $child->ID)->Link(), "/");
+            $output[] = ltrim(DataObject::get_by_id(SiteTree::class, $child->ID)->Link(), "/");
         }
     }
 
@@ -208,7 +209,7 @@ class CloudFlareExtension extends SiteTreeExtension
 
         $actions->addFieldToTab(
             'ActionMenus.MoreOptions',
-            FormAction::create('purgesinglepageAction', 
+            FormAction::create('purgesinglepageAction',
                 _t(
                     'CloudFlare.ActionMenuPurge',
                     'Purge in CloudFlare'

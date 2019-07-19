@@ -1,11 +1,7 @@
 ---
 Name: cloudflare
-After:
-  - 'framework/*'
-  - 'cms/*'
 ---
-
-CloudFlare:
+Steadlane\CloudFlare\CloudFlare:
   log_errors: true
   # Number of seconds before the cURL request execution will time out.
   curl_timeout: 20

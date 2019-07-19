@@ -4,9 +4,14 @@ namespace Steadlane\CloudFlare\Errors;
 use SilverStripe\Core\Object;
 use Steadlane\CloudFlare\CloudFlare;
 
-class HandlerMethods extends Object
+use SilverStripe\Core\Extensible;
+use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Config\Configurable;
+class HandlerMethods
 {
-
+    use Extensible;
+    use Injectable;
+    use Configurable;
     /**
      * Generic Error
      *
@@ -16,24 +21,15 @@ class HandlerMethods extends Object
     {
         self::log(print_r($response));
     }
-
     public static function malformed($response)
     {
         self::log(sprintf("The API response was malformed:\r\n%s", print_r($response, true)));
     }
-
     public static function log($message, $force = null)
     {
         if (!$force || !CloudFlare::config()->log_errors) {
             return;
         }
-
-        error_log(
-            sprintf(
-                "CloudFlare Module Reported An Error:\r\n%s",
-                $message
-            )
-        );
+        error_log(sprintf("CloudFlare Module Reported An Error:\r\n%s", $message));
     }
-
 }

@@ -1,13 +1,9 @@
 ---
 Name: cloudflareextensions
-After:
-  - 'framework/*'
-  - 'cms/*'
 ---
-
-SiteTree:
+SilverStripe\CMS\Model\SiteTree:
   extensions:
     - CloudFlareExtension
-LeftAndMain:
+SilverStripe\Admin\LeftAndMain:
   extensions:
     - CloudFlareLeftAndMainExtension

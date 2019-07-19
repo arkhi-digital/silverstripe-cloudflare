@@ -36,11 +36,11 @@ Run `/dev/build` afterwards and `?flush=1` for good measure for SilverStripe to 
 
 ## Configuration
 
-Configuration for this module is minimal, you need only define two constants in `mysite/_config.php`
+Configuration for this module is minimal, you need only define two constants in your .env file
 
 ```
-define('CLOUDFLARE_AUTH_EMAIL', 'mycloudflare@example.com.au');
-define('CLOUDFLARE_AUTH_KEY', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+CLOUDFLARE_AUTH_EMAIL="mycloudflare@example.com.au"
+CLOUDFLARE_AUTH_KEY="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ```
 
 ## Cache Rules
