@@ -60,6 +60,15 @@ class CloudFlare extends SS_Object
     }
 
     /**
+     * Checks if the current user has the given permission
+     * @deprecated Use Permission::check instead
+     */
+    public function canUser($permission)
+    {
+        return Permission::check($permission);
+    }
+
+    /**
      * Purges CloudFlare's cache for URL provided.
      *
      * @note The CloudFlare API sets a maximum of 1,200 requests in a five minute period.
