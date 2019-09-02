@@ -1,0 +1,7 @@
+fileExtensions:
+  - php
+mappings:
+  CloudFlare: Steadlane\CloudFlare
+  CloudFlare_Notifications: Steadlane\CloudFlare\Notifications
+  CloudFlare_Purge: Steadlane\CloudFlare\Purge
+  CloudFlare_ErrorHandlers: Steadlane\CloudFlare\Errors\

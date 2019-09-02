@@ -1,8 +1,16 @@
 <?php
+
+namespace Steadlane\CloudFlare\Tests;
+
+use SilverStripe\Core\Extensible;
+use SilverStripe\Dev\SapphireTest;
+use SilverStripe\Dev\TestOnly;
+use SilverStripe\Core\Extension;
+use Steadlane\CloudFlare\CloudFlare;
+
 /**
  * Class CloudFlareTest
  *
- * @todo
  * @coversDefaultClass CloudFlare
  */
 class CloudFlareTest extends SapphireTest
@@ -17,15 +25,10 @@ class CloudFlareTest extends SapphireTest
         // so that tests run locally in this scenario
         $this->removeExtensibleMethod('updateCloudFlareServerName');
 
-        // Ensures the CI environment can be factored in
-        putenv('TRAVIS=1');
-        putenv('CLOUDFLARE_DUMMY_SITE=https://www.sometest.dev');
-        $this->assertSame('sometest.dev', CloudFlare::singleton()->getServerName());
-
         // Apply a test extension, get a new instance of the CF class and test again to ensure the hook works
-        CloudFlare::add_extension('CloudFlareTest_Extension');
-        $this->assertSame('extended.dev', CloudFlare::create()->getServerName());
-        CloudFlare::remove_extension('CloudFlareTest_Extension');
+        CloudFlare::add_extension(CloudFlareTest_Extension::class);
+        $this->assertSame('extended.dvl', CloudFlare::create()->getServerName());
+        CloudFlare::remove_extension(CloudFlareTest_Extension::class);
     }
 
     /**
@@ -33,25 +36,25 @@ class CloudFlareTest extends SapphireTest
      */
     public function testPrependServerName() {
         $this->removeExtensibleMethod('updateCloudFlareServerName');
-        CloudFlare::add_extension('CloudFlareTest_Extension');
-
+        
+        CloudFlare::add_extension(CloudFlareTest_Extension::class);
         $this->assertEquals(
             CloudFlare::singleton()->prependServerName(
                 array(
                     '/path/to/some/file.js',
                     'path/to/some/other/file.js',
-                    'extended.dev/path/to/some/page',
-                    'http://extended.dev/path/to/some/other/page'
+                    'extended.dvl/path/to/some/page',
+                    'http://extended.dvl/path/to/some/other/page'
                 )
             ),
             array(
-                'http://extended.dev/path/to/some/file.js',
-                'http://extended.dev/path/to/some/other/file.js',
-                'http://extended.dev/path/to/some/page',
-                'http://extended.dev/path/to/some/other/page',
+                'http://extended.dvl/path/to/some/file.js',
+                'http://extended.dvl/path/to/some/other/file.js',
+                'http://extended.dvl/path/to/some/page',
+                'http://extended.dvl/path/to/some/other/page',
             )
         );
-        CloudFlare::remove_extension('CloudFlareTest_Extension');
+        CloudFlare::remove_extension(CloudFlareTest_Extension::class);
     }
 
     /**
@@ -60,8 +63,9 @@ class CloudFlareTest extends SapphireTest
      *
      * @param $method
      */
-    public function removeExtensibleMethod($method) {
-        $extensions = SS_Object::get_extensions('CloudFlare');
+    public function removeExtensibleMethod($method)
+    {
+        $extensions = Extensible::get_extensions('SteadLane\\Cloudflare');
         foreach ($extensions as $class) {
             $tmp = new $class();
             if (method_exists($tmp, $method)) {
@@ -85,6 +89,6 @@ class CloudFlareTest_Extension extends Extension implements TestOnly
      */
     public function updateCloudFlareServerName(&$serverName)
     {
-        $serverName = 'extended.dev';
+        $serverName = 'extended.dvl';
     }
 }

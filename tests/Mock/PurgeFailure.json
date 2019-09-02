@@ -1,0 +1,19 @@
+{
+  "success": false,
+  "errors": [
+    {
+      "code": 1082,
+      "message": "Unable to purge http:\/\/example.com\/cloudflare\/css\/cloudflare.min.css. You can only purge files for this zone"
+    },
+    {
+      "code": 1082,
+      "message": "Unable to purge https:\/\/example.com\/cloudflare\/css\/cloudflare.min.css. You can only purge files for this zone"
+    },
+    {
+      "code": 1016,
+      "message": "One or more cache purge errors"
+    }
+  ],
+  "messages": [],
+  "result": null
+}

@@ -1,25 +1,44 @@
 <?php
+
+namespace SteadLane\Cloudflare;
+
+use SilverStripe\CMS\Model\SiteTreeExtension;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\ORM\DataList;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\FormAction;
+use SilverStripe\Security\Permission;
+
 /**
- * Class CloudFlareExt
- *
+ * Class CloudFlareExtension
  * @package silverstripe-cloudflare
+ * @property SiteTree $owner
  */
 class CloudFlareExtension extends SiteTreeExtension
 {
     /**
      * Extension Hook
      *
-     * @param \SiteTree $original
+     * @param SiteTree $original
      */
     public function onAfterPublish(&$original)
     {
         // if the page was just created, then there is no cache to purge and $original doesn't actually exist so bail out - resolves #3
         // we don't purge anything if we're operating on localhost
-        if (CloudFlare::singleton()->hasCFCredentials() && strlen($original->URLSegment) && CloudFlare::singleton()->canUser('CF_PURGE_PAGE')) {
+        if (CloudFlare::singleton()->hasCFCredentials() && $original && strlen($original->URLSegment) && Permission::check('CF_PURGE_PAGE')) {
 
-            $purger = CloudFlare_Purge::create();
-            $shouldPurgeRelations = CloudFlare_Purge::singleton()->getShouldPurgeRelations();
-            $urls = array($_SERVER['DOCUMENT_ROOT'] . ltrim(DataObject::get_by_id("SiteTree", $this->owner->ID)->Link(), "/"));
+            $purger = Purge::create();
+            $shouldPurgeRelations = Purge::singleton()->getShouldPurgeRelations();
+
+            $pageUrl=ltrim(DataObject::get_by_id(SiteTree::class, $this->owner->ID)->Link(), "/");
+            if ($pageUrl!='/' && substr($pageUrl,-1)=='/') {
+                $pageUrl=substr($pageUrl,0,strlen($pageUrl)-1); // add first URL without trailing slash
+            }
+            $urls = array($_SERVER['DOCUMENT_ROOT'].$pageUrl);
+            if ($pageUrl!='/') {
+                array_push($urls, $_SERVER['DOCUMENT_ROOT'].$pageUrl.'/'); // add second URL with trailing slash
+            }
 
             if ($shouldPurgeRelations) {
                 $top = $this->getTopLevelParent();
@@ -49,6 +68,10 @@ class CloudFlareExtension extends SiteTreeExtension
                 }
             }
 
+            if (count($urls)===1 && empty($urls[0])) {
+                $urls=array();
+            }
+
             if (count($urls) === 1) {
                 $purger
                     ->reset()
@@ -66,9 +89,7 @@ class CloudFlareExtension extends SiteTreeExtension
                     )
                     ->pushFile($urls[0])
                     ->purge();
-            }
-
-            if (count($urls) > 1) {
+            } else if (count($urls) > 1) {
                 $purger
                     ->reset()
                     ->setSuccessMessage(
@@ -97,8 +118,8 @@ class CloudFlareExtension extends SiteTreeExtension
      */
     public function onAfterUnpublish()
     {
-        if (CloudFlare::singleton()->hasCFCredentials()) {
-            $purger = CloudFlare_Purge::create();
+        if (CloudFlare::singleton()->hasCFCredentials() && Permission::check('CF_PURGE_PAGE')) {
+            $purger = Purge::create();
             $purger
                 ->setPurgeEverything(true)
                 ->setSuccessMessage(
@@ -138,7 +159,7 @@ class CloudFlareExtension extends SiteTreeExtension
      *
      * @param null|int $parentID SiteTree.ParentID
      *
-     * @return \DataList
+     * @return DataList
      */
     public function getChildren($parentID = NULL)
     {
@@ -150,9 +171,10 @@ class CloudFlareExtension extends SiteTreeExtension
     /**
      * Traverses through the SiteTree hierarchy until it reaches the top level parent
      *
-     * @return \DataObject|Object
+     * @return DataObject|Object
      */
-    public function getTopLevelParent() {
+    public function getTopLevelParent()
+    {
         $obj = $this->owner;
 
         while ((int)$obj->ParentID) {
@@ -165,10 +187,11 @@ class CloudFlareExtension extends SiteTreeExtension
     /**
      * Recursively fetches all children of the given page ID
      *
-     * @param null $parentID SiteTree.ParentID
-     * @param      $output
+     * @param null|int $parentID
+     * @param array $output
      */
-    public function getChildrenRecursive($parentID = NULL, &$output) {
+    public function getChildrenRecursive($parentID, &$output)
+    {
         $id = (is_null($parentID)) ? $this->owner->ID : $parentID;
 
         if (!is_array($output)) { $output = array(); }
@@ -180,7 +203,7 @@ class CloudFlareExtension extends SiteTreeExtension
                 $this->getChildrenRecursive($child->ID, $output);
             }
 
-            $output[] = ltrim(DataObject::get_by_id('SiteTree', $child->ID)->Link(), "/");
+            $output[] = ltrim(DataObject::get_by_id(SiteTree::class, $child->ID)->Link(), "/");
         }
     }
 
@@ -201,9 +224,9 @@ class CloudFlareExtension extends SiteTreeExtension
             FormAction::create('purgesinglepageAction', 
                 _t(
                     'CloudFlare.ActionMenuPurge',
-                    'Purge in CloudFlare'
+                    'Purge in Cloudflare'
                 )
-            )
+            )->addExtraClass('btn-secondary')
         );
     }
 }

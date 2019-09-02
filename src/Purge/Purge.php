@@ -1,17 +1,42 @@
 <?php
 
-class CloudFlare_Purge extends SS_Object
+namespace SteadLane\Cloudflare;
+
+use SilverStripe\Core\Extensible;
+use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Control\Director;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\ORM\DataObject;
+use SteadLane\Cloudflare\Messages\Notifications;
+
+/**
+ * Class Purge
+ * @package SteadLane\Cloudflare
+ */
+class Purge
 {
+    use Injectable;
+    use Extensible;
 
     /**
-     * @var
+     * @var string
      */
     protected $successMessage;
 
     /**
-     * @var
+     * @var string
      */
     protected $failureMessage;
+
+    /**
+     * @var bool
+     */
+    protected $testOnly = false;
+
+    /**
+     * @var string
+     */
+    protected $testResultSuccess;
 
     /**
      * @var array
@@ -39,7 +64,7 @@ class CloudFlare_Purge extends SS_Object
             "js"
         ),
         'css' => array(
-            'css', 'cssmap'
+            'css', 'css.map'
         )
     );
 
@@ -61,7 +86,7 @@ class CloudFlare_Purge extends SS_Object
     }
 
     /**
-     * @param string $file
+     * @param string|array $file
      * @return $this
      */
     public function pushFile($file)
@@ -87,7 +112,6 @@ class CloudFlare_Purge extends SS_Object
      * Recursively find files with a specific extension(s) starting at the document root
      *
      * @param string|array $extensions
-     *
      * @param null|string $dir A directory relevant to the project root, if null the entire project root will be searched
      * @return $this
      */
@@ -95,37 +119,44 @@ class CloudFlare_Purge extends SS_Object
     {
         $files = array();
         $rootDir = rtrim(str_replace('//', '/', $_SERVER['DOCUMENT_ROOT'] . Director::baseURL() . "/" . $dir), '/');
+
         if (is_array($extensions)) {
             foreach($extensions as &$ext) {
                 $ext = ltrim($ext, '.');
             }
             $extensions = implode("|", $extensions);
         }
+
         $extensions = ltrim($extensions, '.');
         $pattern = sprintf('/.(%s)$/i', $extensions);
+
         if (is_string($extensions)) {
             $files = $this->fileSearch($rootDir, $pattern);
         }
+
         $this->pushFile($files);
+
         return $this;
     }
+
     /**
      * Recursive glob-like function
      *
      * @param string $dir
      * @param string $pattern Fully qualified regex pattern
-     *
-     * @return array
+     * @return array|bool
      */
     public function fileSearch($dir, $pattern)
     {
         if (!is_dir($dir)) {
             return false;
         }
+
         $files = array();
         $this->fileSearchAux($dir, $pattern, $files);
         return $files;
     }
+
     /**
      * Auxiliary function to avoid writing temporary temporary lists on the way back
      *
@@ -135,31 +166,39 @@ class CloudFlare_Purge extends SS_Object
      */
     private function fileSearchAux($dir, $pattern, &$files) {
         $handle = opendir($dir);
-        while (($file = readdir($handle)) !== false) {
-            if ($file == '.' || $file == '..') {
-                continue;
-            }
-            $filePath = $dir == '.' ? $file : $dir . '/' . $file;
-            if (is_link($filePath)) {
-                continue;
-            }
-            if (is_file($filePath)) {
-                if (preg_match($pattern, $filePath)) {
-                    $files[] = $filePath;
+        if ($handle) {
+            while (($file = readdir($handle)) !== false) {
+
+                if ($file == '.' || $file == '..') {
+                    continue;
+                }
+
+                $filePath = $dir == '.' ? $file : $dir . '/' . $file;
+
+                if (is_link($filePath)) {
+                    continue;
+                }
+
+                if (is_file($filePath)) {
+                    if (preg_match($pattern, $filePath)) {
+                        $files[] = $filePath;
+                    }
+                }
+
+                if (is_dir($filePath) && !$this->isBlacklisted($file)) {
+                    $this->fileSearchAux($filePath, $pattern, $files);
                 }
             }
-            if (is_dir($filePath) && !$this->isBlacklisted($file)) {
-                $this->fileSearchAux($filePath, $pattern, $files);
-            }
+            closedir($handle);
         }
     }
+
 
     /**
      * Converts /public_html/path/to/file.ext to example.com/path/to/file.ext, it is perfectly safe to hand this
      * an "already absolute" url.
      *
      * @param string|array $files
-     *
      * @return string|array|bool Dependent on input, returns false if input is neither an array, or a string.
      */
     public function convertToAbsolute($files)
@@ -167,6 +206,7 @@ class CloudFlare_Purge extends SS_Object
         // It's not the best feeling to have to add http:// here, despite it's SSL variant being picked up
         // by getUrlVariants(). However without it cloudflare will respond with an error similar to:
         // "You may only purge files for this zone only"
+        // @TODO: get rid of this stupidity, surely we don't need to use DOCUMENT_ROOT at all?
         $baseUrl = "http://" . CloudFlare::singleton()->getServerName() . "/";
         $rootDir = str_replace("//", "/", $_SERVER['DOCUMENT_ROOT']);
 
@@ -177,6 +217,8 @@ class CloudFlare_Purge extends SS_Object
                 $file = str_replace($basename, $basenameEncoded, $file);
 
                 $files[$index] = str_replace($rootDir, $baseUrl, $file);
+                $files[$index] = str_replace($baseUrl.'/', $baseUrl, $files[$index]); // stooopid
+                $files[$index] = str_replace($baseUrl.'\\/', $baseUrl, $files[$index]); // stoooopid
             }
 
             return $files;
@@ -187,7 +229,9 @@ class CloudFlare_Purge extends SS_Object
             $basenameEncoded = urlencode($basename);
             $files = str_replace($basename, $basenameEncoded, $files);
 
-            return str_replace($rootDir, $baseUrl, $files);
+            $files=str_replace($rootDir, $baseUrl, $files);
+            $files=str_replace($baseUrl.'/', $baseUrl, $files); // stoooooopid
+            return str_replace($baseUrl.'\\/', $baseUrl, $files); // stooooooooooopid
         }
 
         return false;
@@ -220,11 +264,12 @@ class CloudFlare_Purge extends SS_Object
             );
         }
 
+        CloudFlare::debug("Purge::purge() / data = ", $data);
         $this->setResponse($this->handleRequest($data));
 
         $success = $this->isSuccessful();
 
-        CloudFlare_Notifications::handleMessage(
+        Notifications::handleMessage(
             ($success) ? ($this->getSuccessMessage() ?: false) : ($this->getFailureMessage() ?: false),
             array(
                 'file_count' => $this->count()
@@ -240,6 +285,20 @@ class CloudFlare_Purge extends SS_Object
     public function getFiles()
     {
         return $this->files;
+    }
+
+    /**
+     * @param bool $bool    If true, no request to CloudFlare will actually be made and instead you will receive a mock
+     *                      response
+     * @param bool $success True to simulate a successful request, or false to simulate a failure
+     *
+     * @return $this
+     */
+    public function setTestOnly($bool, $success) {
+        $this->testOnly = $bool;
+        $this->testResultSuccess = $success;
+
+        return $this;
     }
 
     /**
@@ -289,6 +348,9 @@ class CloudFlare_Purge extends SS_Object
             return $responses;
         }
 
+        if ($this->testOnly) {
+            return CloudFlare::getMockResponse('Purge', $this->testResultSuccess);
+        }
 
         return CloudFlare::singleton()->curlRequest($this->getEndpoint(), $data, $method);
     }
@@ -485,9 +547,11 @@ class CloudFlare_Purge extends SS_Object
         if (!is_array($blacklist = CloudFlare::config()->purge_dir_blacklist)) {
             return false;
         }
+
         if (in_array($dir, $blacklist)) {
             return true;
         }
+
         return false;
     }
 
@@ -501,14 +565,15 @@ class CloudFlare_Purge extends SS_Object
      *
      * @return bool
      */
-    public function quick($what, $other_id = null) {
+    public function quick($what, $other_id = null)
+    {
         // create a new instance of self so we don't interrupt anything
         $purger = self::create();
         $what = trim(strtolower($what));
 
         if ($what == 'page' && isset($other_id)) {
             if (!($other_id instanceof SiteTree)) {
-                $other_id = DataObject::get_by_id('SiteTree', $other_id);
+                $other_id = DataObject::get_by_id(SiteTree::class, $other_id);
             }
             $page = $other_id;
 
@@ -534,7 +599,7 @@ class CloudFlare_Purge extends SS_Object
         $purger->findFilesWithExts($fileTypes[$what]);
 
         if (!$purger->count()) {
-            CloudFlare_Notifications::handleMessage(
+            Notifications::handleMessage(
                 _t(
                     "CloudFlare.NoFilesToPurge",
                     "No {what} files were found to purge.",
@@ -561,5 +626,4 @@ class CloudFlare_Purge extends SS_Object
 
         return $purger->isSuccessful();
     }
-
 }

@@ -1,15 +1,20 @@
 <?php
 
+namespace SteadLane\Cloudflare\Tests;
+
+use SilverStripe\Dev\SapphireTest;
+use Steadlane\CloudFlare\Purge;
+
 /**
- * Class CloudFlareTest
+ * Class PurgeTest
  *
- * @todo
- * @coversDefaultClass CloudFlare_Purge
+ * @coversDefaultClass Purge
  */
-class CloudFlare_PurgeTest extends SapphireTest {
+class PurgeTest extends SapphireTest
+{
 
     /**
-     * @covers ::getUrlVariants
+     * @covers Purge::getUrlVariants
      */
     public function testGetUrlVariants()
     {
@@ -18,7 +23,7 @@ class CloudFlare_PurgeTest extends SapphireTest {
         );
 
         $this->assertEquals(
-            CloudFlare_Purge::singleton()->getUrlVariants($urls),
+            Purge::singleton()->getUrlVariants($urls),
             array(
                 'http://www.example.com',
                 'https://www.example.com'
@@ -26,12 +31,22 @@ class CloudFlare_PurgeTest extends SapphireTest {
         );
     }
 
-    public function testGetFileTypes() {
-        $this->assertTrue(is_array(CloudFlare_Purge::singleton()->getFileTypes()));
+    /**
+     * @covers Purge::getFileTypes()
+     */
+    public function testGetFileTypes()
+    {
+        $this->assertTrue(is_array(Purge::singleton()->getFileTypes()));
     }
 
-    public function testFileMethods() {
-        $purger = CloudFlare_Purge::create();
+    /**
+     * @covers Purge::pushFile()
+     * @covers Purge::getFiles()
+     * @covers Purge::clearFiles()
+     */
+    public function testFileMethods()
+    {
+        $purger = Purge::create();
 
         // test string as file
         $purger->pushFile("somefile.ext");
@@ -78,6 +93,32 @@ class CloudFlare_PurgeTest extends SapphireTest {
 
         // assert that all files from above are cleared
         $this->assertTrue(is_null($purger->clearFiles()->getFiles()));
+    }
+
+    /**
+     * @covers Purge::setPurgeEverything
+     * @covers Purge::purge()
+     * @covers Purge::isSuccessful()
+     * @covers Purge::setTestOnly()
+     */
+    public function testPurgeEverything()
+    {
+        $purger = Purge::create();
+        $purger
+            ->setPurgeEverything(true)
+            ->setTestOnly(true, true)
+            ->purge();
+
+        $this->assertTrue($purger->isSuccessful());
+
+        $purger->reset();
+
+        $purger
+            ->setPurgeEverything(true)
+            ->setTestOnly(true, false)
+            ->purge();
+
+        $this->assertFalse($purger->isSuccessful());
     }
 
 }

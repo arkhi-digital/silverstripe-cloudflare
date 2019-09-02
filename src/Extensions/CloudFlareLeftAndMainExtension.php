@@ -1,7 +1,13 @@
 <?php
+
+namespace SteadLane\Cloudflare;
+
+use SilverStripe\Admin\LeftAndMainExtension;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\Security;
+
 /**
  * Class CloudFlareLeftAndMainExtension
- *
  * @package silverstripe-cloudflare
  */
 class CloudFlareLeftAndMainExtension extends LeftAndMainExtension
@@ -20,12 +26,14 @@ class CloudFlareLeftAndMainExtension extends LeftAndMainExtension
      */
     public function purgesinglepageAction($request)
     {
-        CloudFlare::singleton()->canUser('CF_PURGE_PAGE');
+        if (!Permission::check('CF_PURGE_PAGE')) {
+            Security::permissionFailure();
+        }
         
         if (empty($request) || empty($request['ID'])) {
             return;
         }
 
-        CloudFlare_Purge::singleton()->quick('page', $request['ID']);
+        Purge::singleton()->quick('page', $request['ID']);
     }
 }
