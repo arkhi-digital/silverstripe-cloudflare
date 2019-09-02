@@ -206,6 +206,7 @@ class Purge
         // It's not the best feeling to have to add http:// here, despite it's SSL variant being picked up
         // by getUrlVariants(). However without it cloudflare will respond with an error similar to:
         // "You may only purge files for this zone only"
+        // @TODO: get rid of this stupidity, surely we don't need to use DOCUMENT_ROOT at all?
         $baseUrl = "http://" . CloudFlare::singleton()->getServerName() . "/";
         $rootDir = str_replace("//", "/", $_SERVER['DOCUMENT_ROOT']);
 
@@ -216,6 +217,8 @@ class Purge
                 $file = str_replace($basename, $basenameEncoded, $file);
 
                 $files[$index] = str_replace($rootDir, $baseUrl, $file);
+                $files[$index] = str_replace($baseUrl.'/', $baseUrl, $files[$index]); // stooopid
+                $files[$index] = str_replace($baseUrl.'\\/', $baseUrl, $files[$index]); // stoooopid
             }
 
             return $files;
@@ -226,7 +229,9 @@ class Purge
             $basenameEncoded = urlencode($basename);
             $files = str_replace($basename, $basenameEncoded, $files);
 
-            return str_replace($rootDir, $baseUrl, $files);
+            $files=str_replace($rootDir, $baseUrl, $files);
+            $files=str_replace($baseUrl.'/', $baseUrl, $files); // stoooooopid
+            return str_replace($baseUrl.'\\/', $baseUrl, $files); // stooooooooooopid
         }
 
         return false;
@@ -259,6 +264,7 @@ class Purge
             );
         }
 
+        CloudFlare::debug("Purge::purge() / data = ", $data);
         $this->setResponse($this->handleRequest($data));
 
         $success = $this->isSuccessful();
@@ -620,5 +626,4 @@ class Purge
 
         return $purger->isSuccessful();
     }
-
 }

@@ -13,6 +13,7 @@ use SilverStripe\Security\Permission;
 /**
  * Class CloudFlareExtension
  * @package silverstripe-cloudflare
+ * @property SiteTree $owner
  */
 class CloudFlareExtension extends SiteTreeExtension
 {

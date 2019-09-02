@@ -2,7 +2,9 @@
 
 namespace SteadLane\Cloudflare\Errors;
 
+use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Injector\Injector;
 use SteadLane\Cloudflare\CloudFlare;
 
 /**
@@ -41,11 +43,10 @@ class HandlerMethods
             return;
         }
 
-        error_log(
-            sprintf(
-                "Cloudflare module reported an error:\r\n%s",
-                $message
-            )
-        );
+        $error="Cloudflare module reported an error:\r\n".$message;
+        if (Injector::inst()->get(LoggerInterface::class)) {
+        	Injector::inst()->get(LoggerInterface::class)->debug($error);
+		}
+        error_log($error);
     }
 }

@@ -31,7 +31,7 @@ class CloudFlareSingleUrlForm extends Form
                     'CloudFlare.SingleUrlPurgeButton',
                     'Purge'
                 )
-            )
+            )->addExtraClass('btn action btn-primary px-3 mt-4')
         );
 
         parent::__construct($controller, $name, $fields, $actions);

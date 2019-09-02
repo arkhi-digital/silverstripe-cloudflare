@@ -2,6 +2,7 @@
 
 namespace SteadLane\Cloudflare;
 
+use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
@@ -83,7 +84,9 @@ class CloudFlare
     public function getServerName()
     {
         $serverName = '';
-        if (!empty($_SERVER['SERVER_NAME'])) {
+        if (isset($_SERVER['HTTP_HOST']) && !empty($_SERVER['HTTP_HOST'])) {
+            $serverName = Convert::raw2xml($_SERVER['HTTP_HOST']); // "Fixes" #1 (what?)
+        } else if (!empty($_SERVER['SERVER_NAME'])) {
             $server = Convert::raw2xml($_SERVER); // "Fixes" #1
             $serverName = $server['SERVER_NAME'];
         }
@@ -95,10 +98,10 @@ class CloudFlare
 
         // Remove protocols, etc
         $replaceWith = array(
-            'www.' => '',
             'http://' => '',
             'https://' => ''
         );
+        if (!isset($_SERVER['HTTP_HOST'])) { $replaceWith['www.']=''; } // hack!
         $serverName = str_replace(array_keys($replaceWith), array_values($replaceWith), $serverName);
 
         // Allow extensions to modify or replace the server name if required
@@ -125,9 +128,8 @@ class CloudFlare
     {
         if ($this->getCacheEnabled()) {
             $factory = Injector::inst()->get(CacheInterface::class . '.CloudflareCache');
-            if ($cache = $factory->load(self::CF_ZONE_ID_CACHE_KEY)) {
+            if ($factory && ($cache = $factory->get(self::CF_ZONE_ID_CACHE_KEY))) {
                 $this->isReady(true);
-
                 return $cache;
             }
         }
@@ -177,7 +179,7 @@ class CloudFlare
         $zoneID = $array['result'][0]['id'];
 
         if ($this->getCacheEnabled() && isset($factory)) {
-            $factory->set($zoneID, self::CF_ZONE_ID_CACHE_KEY);
+            $factory->set(self::CF_ZONE_ID_CACHE_KEY, $zoneID);
         }
 
         $this->isReady(true);
@@ -274,7 +276,7 @@ class CloudFlare
 
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, $this->getAuthHeaders());
-        // This is intended, and was/is required by CloudFlare at one point
+        // This is intended, and was/is required by Cloudflare at one point
         curl_setopt($curl, CURLOPT_USERAGENT, $this->getUserAgent());
 
         if (!is_null($data)) {
@@ -285,12 +287,17 @@ class CloudFlare
         }
 
         $result = curl_exec($curl);
+        $responseCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
         // Handle any errors
         if (false === $result) {
-            user_error(sprintf("Error connecting to Cloudflare:\n%s", curl_error($curl)), E_USER_ERROR);
+            self::debug("Error connecting to Cloudflare: (code=".$responseCode.")\n".curl_error($curl));
+            user_error(sprintf("Error connecting to Cloudflare: (code=%s)\n%s", ((string)$responseCode), curl_error($curl)), E_USER_ERROR);
         }
         curl_close($curl);
+
+        self::debug("CloudFlare::curlRequest() / url = [".$url."] data=".(is_null($data)?"NULL":$data)." / response code=[".$responseCode."]".($result===false?" error=[".curl_error($curl)."]":""));
+        //self::debug("CloudFlare::curlRequest() / result = [".$result."]");
 
         return $result;
     }
@@ -402,5 +409,20 @@ class CloudFlare
         }
 
         return $result;
+    }
+
+    /**
+     * @param string $msg
+     * @param Object|array|null $obj
+     */
+    public static function debug($msg, $obj=null)
+    {
+        if (CloudFlare::config()->debug && Injector::inst()->get(LoggerInterface::class)) {
+            $error=$msg;
+            if ($obj) {
+                $error.=' '.print_r($obj,true);
+            }
+            Injector::inst()->get(LoggerInterface::class)->debug($error);
+        }
     }
 }
