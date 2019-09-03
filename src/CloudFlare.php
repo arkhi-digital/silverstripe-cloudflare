@@ -126,6 +126,10 @@ class CloudFlare
      */
     public function fetchZoneID()
     {
+        if (!$this->hasCFCredentials()) {
+            return null;
+        }
+
         if ($this->getCacheEnabled()) {
             $factory = Injector::inst()->get(CacheInterface::class . '.CloudflareCache');
             if ($factory && ($cache = $factory->get(self::CF_ZONE_ID_CACHE_KEY))) {
@@ -328,7 +332,9 @@ class CloudFlare
                 'key' => getenv('AUTH_KEY'),
             );
         } elseif (!$auth = $this->getCFCredentials()) {
+            self::debug("Cloudflare API credentials have not been provided.");
             user_error("Cloudflare API credentials have not been provided.");
+            //return null;
             exit;
         }
 
